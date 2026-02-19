@@ -1,5 +1,5 @@
 import { Container } from "@/components/layout/Container"
-import { PawPrint, Instagram, Linkedin } from "lucide-react"
+import { Instagram, Linkedin } from "lucide-react"
 
 export function SiteFooter() {
     return (
@@ -7,10 +7,10 @@ export function SiteFooter() {
             <Container>
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-4 text-center md:text-left">
                     <div className="space-y-4 flex flex-col items-center md:items-start">
-                        <div className="flex items-center gap-2 font-bold text-xl text-primary">
-                            <PawPrint className="h-6 w-6" />
-                            <span>Adote Pet</span>
-                        </div>
+                        <a href="/" className="flex items-center gap-2">
+                            <img src="/logo.png" alt="AdotePet" width={48} height={48} className="h-12 w-12 object-contain" />
+                            <span className="text-xl font-bold text-primary">AdotePet</span>
+                        </a>
                         <p className="text-sm text-muted-foreground">
                             Conectando corações e patas desde 2024. Nossa missão é encontrar um lar amoroso para cada animal.
                         </p>
@@ -20,7 +20,7 @@ export function SiteFooter() {
                                 href="https://instagram.com/adotepet"
                                 target="_blank"
                                 rel="noreferrer"
-                                aria-label="Instagram do Adote Pet"
+                                aria-label="Instagram do AdotePet"
                                 className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
                             >
                                 <Instagram className="h-5 w-5" />
@@ -29,7 +29,7 @@ export function SiteFooter() {
                                 href="https://linkedin.com/company/adotepet"
                                 target="_blank"
                                 rel="noreferrer"
-                                aria-label="LinkedIn do Adote Pet"
+                                aria-label="LinkedIn do AdotePet"
                                 className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10 text-primary hover:bg-primary hover:text-white transition-colors"
                             >
                                 <Linkedin className="h-5 w-5" />
@@ -66,7 +66,7 @@ export function SiteFooter() {
                 </div>
 
                 <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t pt-8 text-center text-sm text-muted-foreground md:flex-row">
-                    <p>&copy; 2026 Adote Pet. Todos os direitos reservados.</p>
+                    <p>&copy; 2026 AdotePet. Todos os direitos reservados.</p>
                 </div>
             </Container>
         </footer>

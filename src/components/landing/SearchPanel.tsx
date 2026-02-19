@@ -9,7 +9,6 @@ import {
     SelectValue,
 } from "@/components/ui/select"
 import { MapPin, Search } from "lucide-react"
-// import { useGeolocation } removed unused
 
 export interface SearchFilters {
     species: string
@@ -24,6 +23,8 @@ interface SearchPanelProps {
     onSearch: () => void
     onUseLocation: () => void
     isLocating: boolean
+    sortBy: "recent" | "distance"
+    onSortChange: (value: "recent" | "distance") => void
 }
 
 export function SearchPanel({
@@ -32,10 +33,12 @@ export function SearchPanel({
     onSearch,
     onUseLocation,
     isLocating,
+    sortBy,
+    onSortChange,
 }: SearchPanelProps) {
     return (
-        <div className="w-full rounded-2xl bg-white p-4 shadow-lg border md:p-6 lg:flex lg:items-end lg:gap-4">
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 lg:flex-1">
+        <div className="w-full rounded-2xl bg-white p-4 shadow-sm border border-border/60 md:p-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1fr_2fr_auto] gap-4 items-end">
 
                 {/* Espécie */}
                 <div className="space-y-2">
@@ -44,13 +47,31 @@ export function SearchPanel({
                         value={filters.species}
                         onValueChange={(val) => onFilterChange("species", val)}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10">
                             <SelectValue placeholder="Qualquer" />
                         </SelectTrigger>
                         <SelectContent>
                             <SelectItem value="all">Qualquer</SelectItem>
                             <SelectItem value="Cachorro">Cachorro</SelectItem>
                             <SelectItem value="Gato">Gato</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
+                {/* Sexo (New) */}
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Sexo</label>
+                    <Select
+                        value={filters.gender}
+                        onValueChange={(val) => onFilterChange("gender", val)}
+                    >
+                        <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Qualquer" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="all">Qualquer</SelectItem>
+                            <SelectItem value="Macho">Macho</SelectItem>
+                            <SelectItem value="Fêmea">Fêmea</SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
@@ -62,7 +83,7 @@ export function SearchPanel({
                         value={filters.size}
                         onValueChange={(val) => onFilterChange("size", val)}
                     >
-                        <SelectTrigger>
+                        <SelectTrigger className="h-10">
                             <SelectValue placeholder="Qualquer" />
                         </SelectTrigger>
                         <SelectContent>
@@ -74,9 +95,26 @@ export function SearchPanel({
                     </Select>
                 </div>
 
+                {/* Ordenação */}
+                <div className="space-y-2">
+                    <label className="text-sm font-medium text-muted-foreground">Ordenar por</label>
+                    <Select
+                        value={sortBy}
+                        onValueChange={(val: "recent" | "distance") => onSortChange(val)}
+                    >
+                        <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Ordenar" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="recent">Mais recentes</SelectItem>
+                            <SelectItem value="distance">Mais próximos</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
+
                 {/* Localização */}
-                <div className="space-y-2 md:col-span-2 lg:col-span-2">
-                    <div className="flex justify-between">
+                <div className="space-y-2">
+                    <div className="flex justify-between items-center h-5">
                         <label className="text-sm font-medium text-muted-foreground">Onde</label>
                         <button
                             onClick={onUseLocation}
@@ -93,12 +131,15 @@ export function SearchPanel({
                         placeholder="Cidade, estado ou CEP"
                         value={filters.location}
                         onChange={(e) => onFilterChange("location", e.target.value)}
+                        className="h-10"
                     />
                 </div>
-            </div>
 
-            <div className="mt-4 lg:mt-0">
-                <Button size="lg" className="w-full lg:w-auto" onClick={onSearch}>
+                {/* Botão Buscar */}
+                <Button
+                    className="h-10 w-full lg:w-auto px-6"
+                    onClick={onSearch}
+                >
                     <Search className="mr-2 h-4 w-4" />
                     Buscar
                 </Button>

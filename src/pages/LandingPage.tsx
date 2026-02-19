@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { SiteHeader } from "@/components/landing/SiteHeader"
 import { HeroSearch } from "@/components/landing/HeroSearch"
 import { SearchPanel } from "@/components/landing/SearchPanel"
 // import { SearchSheet } from "@/components/landing/SearchSheet"
 import { PetGrid } from "@/components/landing/PetGrid"
+import { Pagination } from "@/components/landing/Pagination"
 import { SocialProof } from "@/components/landing/SocialProof"
 import { HowToAdopt } from "@/components/landing/HowToAdopt"
 import { MetricsBand } from "@/components/landing/MetricsBand"
@@ -14,17 +15,14 @@ import { Section } from "@/components/layout/Section"
 import { SectionHeader } from "@/components/landing/SectionHeader"
 import { PETS } from "@/data/pets"
 import { calculateDistance } from "@/lib/geo"
+import { mapSpeciesToCanonical, mapSizeToCanonical, mapGenderToCanonical } from "@/lib/filters"
 import type { SearchFilters } from "@/components/landing/SearchPanel"
 import { toast } from "sonner"
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
 import { X } from "lucide-react"
+
+const PAGE_SIZE = 8
 
 export function LandingPage() {
     // State
@@ -39,6 +37,7 @@ export function LandingPage() {
     const [userLocation, setUserLocation] = useState<{ lat: number; lon: number } | null>(null)
     const [isLocating, setIsLocating] = useState(false)
     const [loading, setLoading] = useState(false) // Fake loading for UX
+    const [currentPage, setCurrentPage] = useState(1)
 
     // Handlers
     const handleFilterChange = (key: keyof SearchFilters, value: string) => {
@@ -87,22 +86,47 @@ export function LandingPage() {
         )
     }
 
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page)
+        // Optionally scroll to top of grid
+        const gridElement = document.getElementById('pets')
+        if (gridElement) {
+            const headerOffset = 100
+            const elementPosition = gridElement.getBoundingClientRect().top
+            const offsetPosition = elementPosition + window.pageYOffset - headerOffset
+
+            window.scrollTo({
+                top: offsetPosition,
+                behavior: "smooth"
+            })
+        }
+    }
+
     // Filter Logic
     const filteredPets = useMemo(() => {
         let result = [...PETS]
 
-        // 1. Text Filters
+        // 1. Text Filters & Strict Normalization
         if (filters.species !== "all") {
-            result = result.filter((p) => p.species === filters.species)
+            const canonicalSpecies = mapSpeciesToCanonical(filters.species)
+            if (canonicalSpecies !== "all") {
+                result = result.filter((p) => p.species === canonicalSpecies)
+            }
         }
         if (filters.size !== "all") {
-            result = result.filter((p) => p.size === filters.size)
+            const canonicalSize = mapSizeToCanonical(filters.size)
+            if (canonicalSize !== "all") {
+                result = result.filter((p) => p.size === canonicalSize)
+            }
+        }
+        if (filters.gender !== "all") {
+            const canonicalGender = mapGenderToCanonical(filters.gender)
+            if (canonicalGender !== "all") {
+                result = result.filter((p) => p.gender === canonicalGender)
+            }
         }
 
         // 2. Location Filter (Simple String Match or Coordinates)
-        // Note: For this MVP, we are not doing geocoding on the input text, 
-        // just simple string matching if user didn't use "Use my location" button logic for sorting.
-        // However, if we want to filter by city name typed in input:
         if (filters.location) {
             const term = filters.location.toLowerCase()
             result = result.filter(p =>
@@ -126,6 +150,18 @@ export function LandingPage() {
         return result
     }, [filters, sortBy, userLocation])
 
+    // Reset page logic
+    useEffect(() => {
+        setCurrentPage(1)
+    }, [filters, sortBy, userLocation])
+
+    // Pagination Logic
+    const totalResults = filteredPets.length
+    const totalPages = Math.ceil(totalResults / PAGE_SIZE)
+    const startIndex = (currentPage - 1) * PAGE_SIZE
+    const endIndex = Math.min(startIndex + PAGE_SIZE, totalResults)
+    const pagePets = filteredPets.slice(startIndex, startIndex + PAGE_SIZE)
+
     const hasActiveFilters = filters.species !== "all" || filters.size !== "all" || filters.location !== ""
 
     return (
@@ -134,65 +170,58 @@ export function LandingPage() {
 
             <main className="flex-1">
                 <HeroSearch />
-
-                {/* Mobile Filter Sheet Removed as per request - SearchPanel should be visible */}
-                {/* <div className="container py-4 lg:hidden flex justify-end">
-                    <SearchSheet
-                        filters={filters}
-                        onFilterChange={handleFilterChange}
-                        onSearch={handleSearch}
-                    />
-                </div> */}
+                <MetricsBand />
 
                 <Section id="pets" className="py-12 md:py-16">
                     <Container>
-                        <div className="flex flex-col gap-8">
+                        <div className="flex flex-col gap-6">
+                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                                <SectionHeader
+                                    title="Novos amigos perto de você"
+                                    subtitle="Confira os pets que acabaram de chegar."
+                                    align="left"
+                                    className="mb-0"
+                                />
+
+                                {hasActiveFilters && (
+                                    <Button variant="ghost" onClick={handleClearFilters} className="text-muted-foreground hover:text-foreground">
+                                        <X className="mr-2 h-4 w-4" />
+                                        Limpar filtros
+                                    </Button>
+                                )}
+                            </div>
+
                             <SearchPanel
                                 filters={filters}
                                 onFilterChange={handleFilterChange}
                                 onSearch={handleSearch}
                                 onUseLocation={handleUseLocation}
                                 isLocating={isLocating}
+                                sortBy={sortBy}
+                                onSortChange={setSortBy}
                             />
+                            <PetGrid pets={pagePets} loading={loading} userLocation={userLocation} />
 
-                            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                                <SectionHeader
-                                    title="Novos amigos perto de você"
-                                    subtitle="Confira os pets que acabaram de chegar."
-                                    align="left"
-                                    className="mb-0" // Reset standard margin because this is in a flex container
-                                />
-
-                                <div className="flex items-center gap-4">
-                                    {hasActiveFilters && (
-                                        <Button variant="ghost" onClick={handleClearFilters} className="text-muted-foreground hover:text-foreground">
-                                            <X className="mr-2 h-4 w-4" />
-                                            Limpar filtros
-                                        </Button>
-                                    )}
-
-                                    <div className="w-[200px]">
-                                        <Select value={sortBy} onValueChange={(v: any) => setSortBy(v)}>
-                                            <SelectTrigger>
-                                                <SelectValue placeholder="Ordenar por" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="recent">Mais recentes</SelectItem>
-                                                <SelectItem value="distance" disabled={!userLocation}>Mais próximos {(!userLocation) && "(Requer Loc.)"}</SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <PetGrid pets={filteredPets} loading={loading} userLocation={userLocation} />
+                            {totalPages > 1 && (
+                                <>
+                                    <Separator className="mt-4" />
+                                    <Pagination
+                                        currentPage={currentPage}
+                                        totalPages={totalPages}
+                                        onPageChange={handlePageChange}
+                                        startIndex={startIndex}
+                                        endIndex={endIndex}
+                                        totalResults={totalResults}
+                                    />
+                                </>
+                            )}
                         </div>
                     </Container>
                 </Section>
 
                 <HowToAdopt />
 
-                <MetricsBand />
+
 
                 <SocialProof />
 
@@ -200,6 +229,7 @@ export function LandingPage() {
             </main>
 
             <SiteFooter />
-        </div>
+        </div >
     )
 }
+

@@ -11,7 +11,7 @@ const TESTIMONIALS = [
     },
     {
         name: "Carlos Souza",
-        text: "O processo foi muito simples e seguro. A equipe do Adote Pet foi incrível.",
+        text: "O processo foi muito simples e seguro. A equipe do AdotePet foi incrível.",
         pet: "Luna",
         photo: "https://images.unsplash.com/photo-1599566150163-29194dcaad36?q=80&w=100&auto=format&fit=crop"
     },
