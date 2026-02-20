@@ -1,4 +1,3 @@
-```
 import { Button } from "@/components/ui/button"
 import { Container } from "@/components/layout/Container"
 import { Link } from "react-router-dom"
