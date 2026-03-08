@@ -1,8 +1,6 @@
 import { useState, useMemo, useEffect } from "react"
 import { SiteHeader } from "@/components/landing/SiteHeader"
 import { HeroSearch } from "@/components/landing/HeroSearch"
-import { SearchPanel } from "@/components/landing/SearchPanel"
-// import { SearchSheet } from "@/components/landing/SearchSheet"
 import { PetGrid } from "@/components/landing/PetGrid"
 import { Pagination } from "@/components/landing/Pagination"
 import { SocialProof } from "@/components/landing/SocialProof"
@@ -21,6 +19,9 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { X } from "lucide-react"
+
+const HEADER_HEIGHT = 64   // SiteHeader h-16
+const PROXIMITY_THRESHOLD = 200  // px – skip scroll if already this close
 
 const PAGE_SIZE = 8
 
@@ -44,10 +45,31 @@ export function LandingPage() {
         setFilters((prev) => ({ ...prev, [key]: value }))
     }
 
+    const scrollToPets = () => {
+        const section = document.getElementById("pets")
+        if (!section) return
+
+        const rect = section.getBoundingClientRect()
+        const distanceFromTop = Math.abs(rect.top)
+
+        // Skip scroll if already within proximity threshold of the section
+        if (distanceFromTop <= PROXIMITY_THRESHOLD) return
+
+        const prefersReducedMotion =
+            window.matchMedia("(prefers-reduced-motion: reduce)").matches
+
+        const targetY = rect.top + window.scrollY - HEADER_HEIGHT
+
+        window.scrollTo({
+            top: targetY,
+            behavior: prefersReducedMotion ? "auto" : "smooth",
+        })
+    }
+
     const handleSearch = () => {
         setLoading(true)
-        setTimeout(() => setLoading(false), 500) // Simulate network request
-        // In a real app, this might trigger a refetch
+        setTimeout(() => setLoading(false), 500)
+        scrollToPets()
     }
 
     const handleClearFilters = () => {
@@ -169,10 +191,18 @@ export function LandingPage() {
             <SiteHeader />
 
             <main className="flex-1">
-                <HeroSearch />
+                <HeroSearch
+                    filters={filters}
+                    onFilterChange={handleFilterChange}
+                    onSearch={handleSearch}
+                    onUseLocation={handleUseLocation}
+                    isLocating={isLocating}
+                    sortBy={sortBy}
+                    onSortChange={setSortBy}
+                />
                 <MetricsBand />
 
-                <Section id="pets" className="py-12 md:py-16">
+                <Section id="pets" className="py-12 md:py-16 scroll-mt-16">
                     <Container>
                         <div className="flex flex-col gap-6">
                             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
@@ -191,15 +221,7 @@ export function LandingPage() {
                                 )}
                             </div>
 
-                            <SearchPanel
-                                filters={filters}
-                                onFilterChange={handleFilterChange}
-                                onSearch={handleSearch}
-                                onUseLocation={handleUseLocation}
-                                isLocating={isLocating}
-                                sortBy={sortBy}
-                                onSortChange={setSortBy}
-                            />
+
                             <PetGrid pets={pagePets} loading={loading} userLocation={userLocation} />
 
                             {totalPages > 1 && (
