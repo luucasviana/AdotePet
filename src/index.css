@@ -110,3 +110,9 @@
     }
   }
 }
+
+/* Date input — hide native calendar icon (replaced by custom icon in component) */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  opacity: 0;
+  cursor: pointer;
+}

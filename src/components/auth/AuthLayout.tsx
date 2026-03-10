@@ -35,7 +35,7 @@ export function AuthLayout({ children, skipSplash = false }: AuthLayoutProps) {
   // MOBILE: Splash screen (fullscreen carousel)
   if (isMobile && showSplash) {
     return (
-      <div className="fixed inset-0 z-50 flex flex-col" style={{ background: "linear-gradient(135deg, #3B0270 0%, #5c03b0 50%, #7b3fc4 100%)" }}>
+      <div className="fixed inset-0 z-50 flex flex-col bg-[#3B0270]">
         <AuthCarousel
           className="flex-1 rounded-none"
           onComplete={handleSplashDone}

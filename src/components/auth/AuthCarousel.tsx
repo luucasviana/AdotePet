@@ -1,31 +1,28 @@
 import { useEffect, useRef, useState } from "react"
-import { Dog, Heart, PawPrint } from "lucide-react"
 import { cn } from "@/lib/utils"
+import { PublicImage } from "@/components/shared/PublicImage"
 
 const SLIDES = [
   {
     id: 1,
-    icon: PawPrint,
-    title: "Adoção com segurança e transparência.",
-    description: "Cada animal tem histórico completo, vacinas e situação atualizada para você adotar com confiança.",
-    gradient: "from-[#3B0270] via-[#5c03b0] to-[#7b3fc4]",
-    accentColor: "#c084fc",
+    src: "/slide-1.png",
+    alt: "Cachorro e gato felizes lado a lado",
+    headline: "Adoção com segurança\ne transparência",
+    support: "Informações claras e processo guiado do início ao fim.",
   },
   {
     id: 2,
-    icon: Dog,
-    title: "Encontre pets perto de você em poucos cliques.",
-    description: "Filtre por distância, espécie, porte e muito mais. O pet ideal pode estar a poucos quilômetros.",
-    gradient: "from-[#2d0154] via-[#4a0290] to-[#6b21a8]",
-    accentColor: "#e879f9",
+    src: "/slide-2.png",
+    alt: "Mapa mostrando pets próximos à localização do usuário",
+    headline: "Salve uma vida",
+    support: "Adotar é salvar uma vida e ganhar um\namigo para toda a vida!\nFaça a diferença.",
   },
   {
     id: 3,
-    icon: Heart,
-    title: "ONGs e abrigos parceiros verificados.",
-    description: "Todos os parceiros PassportPet passam por verificação. Você sabe exatamente de onde vem seu pet.",
-    gradient: "from-[#3B0270] via-[#6d28d9] to-[#7c3aed]",
-    accentColor: "#a78bfa",
+    src: "/slide-3.png",
+    alt: "Checklist de etapas de adoção com gatinho feliz",
+    headline: "Adote um Pet",
+    support: "Descobra como é fácil encontrar e adotar seu\n novo melhor amigo.\nAlguém está esperando por você!",
   },
 ]
 
@@ -41,25 +38,22 @@ export function AuthCarousel({ className, onComplete }: AuthCarouselProps) {
   const [isPaused, setIsPaused] = useState(false)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const completedRef = useRef(false)
-  const [prefersReduced] = useState(
-    () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
-  )
+
+  // Detect prefers-reduced-motion once at mount
+  const prefersReduced = useRef(
+    typeof window !== "undefined" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  ).current
 
   const goToNext = () => {
     setActiveIndex((prev) => {
       const next = (prev + 1) % SLIDES.length
-      // fire onComplete once after cycling through all slides
       if (!completedRef.current && prev === SLIDES.length - 1) {
         completedRef.current = true
         onComplete?.()
       }
       return next
     })
-  }
-
-  const startInterval = () => {
-    if (prefersReduced) return
-    intervalRef.current = setInterval(goToNext, SLIDE_DURATION)
   }
 
   const clearCurrentInterval = () => {
@@ -70,89 +64,97 @@ export function AuthCarousel({ className, onComplete }: AuthCarouselProps) {
   }
 
   useEffect(() => {
-    if (!isPaused) {
-      startInterval()
+    if (prefersReduced || isPaused) {
+      clearCurrentInterval()
+      return
     }
+    intervalRef.current = setInterval(goToNext, SLIDE_DURATION)
     return clearCurrentInterval
-  }, [isPaused]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  const slide = SLIDES[activeIndex]
-  const IconComponent = slide.icon
+  }, [isPaused, prefersReduced]) // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div
-      className={cn("relative flex flex-col items-center justify-between overflow-hidden rounded-2xl select-none", className)}
-      style={{ background: `linear-gradient(135deg, #3B0270 0%, #5c03b0 50%, #7b3fc4 100%)` }}
+      className={cn(
+        "relative flex flex-col overflow-hidden rounded-2xl border border-white/10 select-none",
+        className
+      )}
+      style={{
+        backgroundImage: "url(/background-login-cadastro.png)",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      }}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
     >
-      {/* Decorative blobs */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
-        <div className="absolute -top-16 -right-16 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
-        <div className="absolute -bottom-20 -left-16 h-72 w-72 rounded-full bg-white/5 blur-3xl" />
-      </div>
+      {/* Overlay de contraste */}
+      <div
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(160deg, rgba(0,0,0,0.25) 0%, rgba(59,2,112,0.55) 100%)",
+        }}
+        aria-hidden
+      />
 
-      {/* Slides container */}
+      {/* Slides */}
       <div className="relative flex flex-1 flex-col items-center justify-center px-8 py-12 text-center">
-        {SLIDES.map((s, i) => {
-          const Icon = s.icon
+        {SLIDES.map((slide, i) => {
           const isActive = i === activeIndex
           return (
             <div
-              key={s.id}
+              key={slide.id}
               aria-hidden={!isActive}
               className={cn(
-                "absolute inset-0 flex flex-col items-center justify-center px-8 py-12 text-center",
+                "absolute inset-0 flex flex-col items-center justify-center gap-6 px-8 pt-10 pb-20 text-center",
                 prefersReduced
-                  ? isActive ? "opacity-100" : "opacity-0"
-                  : "transition-opacity duration-700",
-                !prefersReduced && (isActive ? "opacity-100" : "opacity-0")
+                  ? isActive
+                    ? "opacity-100"
+                    : "opacity-0 pointer-events-none"
+                  : cn(
+                    "transition-opacity duration-700",
+                    isActive ? "opacity-100" : "opacity-0 pointer-events-none"
+                  )
               )}
             >
-              {/* Icon illustration */}
-              <div
-                className="mb-8 flex h-24 w-24 items-center justify-center rounded-2xl"
-                style={{ background: "rgba(255,255,255,0.12)", backdropFilter: "blur(8px)" }}
-              >
-                <Icon className="h-12 w-12 text-white" strokeWidth={1.5} />
-              </div>
+              {/* Imagem do slide */}
+              <PublicImage
+                src={slide.src}
+                alt={slide.alt}
+                loading={i === 0 ? "eager" : "lazy"}
+                className="w-full max-w-[220px] md:max-w-[320px] max-h-[220px] md:max-h-[280px] h-auto object-contain drop-shadow-xl"
+              />
 
-              <h2 className="mb-4 text-2xl font-bold leading-tight text-white">
-                {s.title}
+              {/* Headline */}
+              <h2 className="text-2xl md:text-3xl font-bold leading-tight text-white whitespace-pre-line">
+                {slide.headline}
               </h2>
-              <p className="max-w-xs text-base text-white/75 leading-relaxed">
-                {s.description}
+
+              {/* Texto de apoio */}
+              <p className="max-w-xs text-sm md:text-base text-white/90 leading-relaxed">
+                {slide.support}
               </p>
             </div>
           )
         })}
-
-        {/* Static icon for reduced motion */}
-        {prefersReduced && (
-          <div className="flex flex-col items-center justify-center">
-            <div
-              className="mb-8 flex h-24 w-24 items-center justify-center rounded-2xl"
-              style={{ background: "rgba(255,255,255,0.12)" }}
-            >
-              <IconComponent className="h-12 w-12 text-white" strokeWidth={1.5} />
-            </div>
-            <h2 className="mb-4 text-2xl font-bold leading-tight text-white">{slide.title}</h2>
-            <p className="max-w-xs text-base text-white/75 leading-relaxed">{slide.description}</p>
-          </div>
-        )}
       </div>
 
-      {/* Dot indicators */}
-      <div className="relative flex items-center gap-2 pb-8" role="tablist" aria-label="Slides do carousel">
-        {SLIDES.map((s, i) => (
+      {/* Dots */}
+      <div
+        className="relative flex items-center justify-center gap-2 pb-8"
+        role="tablist"
+        aria-label="Slides do carousel"
+      >
+        {SLIDES.map((slide, i) => (
           <button
-            key={s.id}
+            key={slide.id}
             role="tab"
             aria-selected={i === activeIndex}
-            aria-label={`Slide ${i + 1}`}
+            aria-label={`Ir para slide ${i + 1}`}
             onClick={() => setActiveIndex(i)}
             className={cn(
-              "rounded-full transition-all duration-300",
+              "rounded-lg transition-all",
+              prefersReduced ? "" : "duration-300",
               i === activeIndex
                 ? "bg-white h-2 w-6"
                 : "bg-white/40 h-2 w-2 hover:bg-white/60"

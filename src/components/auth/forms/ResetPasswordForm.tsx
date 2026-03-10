@@ -8,6 +8,7 @@ import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
+import { supabase } from "@/lib/supabase"
 
 const schema = z.object({
   email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
@@ -22,9 +23,18 @@ export function ResetPasswordForm() {
     formState: { errors, isSubmitting },
   } = useForm<ResetValues>({ resolver: zodResolver(schema) })
 
-  const onSubmit = async (_data: ResetValues) => {
-    await new Promise((r) => setTimeout(r, 600))
-    toast.success("Se este email existir, enviaremos instruções.")
+  const onSubmit = async (data: ResetValues) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(data.email, {
+      redirectTo: `${window.location.origin}/reset-senha`,
+    })
+
+    if (error) {
+      toast.error("Erro ao enviar email: " + error.message)
+      return
+    }
+
+    // Always say the same message to avoid user enumeration
+    toast.success("Se este email existir, enviaremos instruções em breve.")
   }
 
   return (

@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { supabase } from "@/lib/supabase"
+import { NavigationLoader } from "@/components/shared/NavigationLoader"
 
 const schema = z.object({
   email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
@@ -25,17 +27,41 @@ export function LoginForm() {
     formState: { errors, isSubmitting },
   } = useForm<LoginValues>({ resolver: zodResolver(schema) })
 
-  const onSubmit = async (_data: LoginValues) => {
-    await new Promise((r) => setTimeout(r, 600))
-    toast.success("Login simulado. Integração será adicionada.")
+  const onSubmit = async (data: LoginValues) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: data.email,
+      password: data.password,
+    })
+
+    if (error) {
+      if (error.message.includes("Invalid login credentials")) {
+        toast.error("Email ou senha incorretos.")
+      } else if (error.message.includes("Email not confirmed")) {
+        toast.warning("Confirme seu email antes de entrar. Verifique sua caixa de entrada.")
+      } else {
+        toast.error(error.message)
+      }
+      return
+    }
+
+    toast.success("Login realizado com sucesso!")
+    navigate("/home")
   }
 
-  const handleGoogle = () => {
-    toast.info("Login com Google será integrado em breve.")
+  const handleGoogle = async () => {
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: {
+        redirectTo: `${window.location.origin}/home`,
+      },
+    })
+    if (error) toast.error("Erro ao iniciar login com Google: " + error.message)
   }
 
   return (
-    <div className="w-full rounded-2xl border bg-white shadow-sm flex flex-col">
+    <>
+      {isSubmitting && <NavigationLoader />}
+      <div className="w-full rounded-2xl border bg-white shadow-sm flex flex-col">
       {/* Header */}
       <div className="flex flex-col items-center gap-4 px-8 pt-8 pb-6 border-b border-border">
         <div className="flex items-center gap-2">
@@ -66,22 +92,6 @@ export function LoginForm() {
 
       {/* Form body */}
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4 px-8 py-8">
-        {/* Google button */}
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full h-10 rounded-lg gap-2 border"
-          onClick={handleGoogle}
-        >
-          <ChromeIcon className="h-4 w-4" />
-          Continuar com Google
-        </Button>
-
-        <div className="flex items-center gap-4">
-          <Separator className="flex-1" />
-          <span className="text-xs text-muted-foreground">ou</span>
-          <Separator className="flex-1" />
-        </div>
 
         {/* Email */}
         <div className="flex flex-col gap-2">
@@ -141,7 +151,25 @@ export function LoginForm() {
         >
           {isSubmitting ? "Entrando…" : "Entrar"}
         </Button>
+
+        <div className="flex items-center gap-4">
+          <Separator className="flex-1" />
+          <span className="text-xs text-muted-foreground">ou</span>
+          <Separator className="flex-1" />
+        </div>
+
+        {/* Google button */}
+        <Button
+          type="button"
+          variant="outline"
+          className="w-full h-10 rounded-lg gap-2 border"
+          onClick={handleGoogle}
+        >
+          <ChromeIcon className="h-4 w-4" />
+          Entrar com conta Google
+        </Button>
       </form>
     </div>
+    </>
   )
 }
