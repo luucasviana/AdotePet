@@ -1,42 +1,36 @@
-import { useNavigate } from "react-router-dom"
-import { toast } from "sonner"
-import { LogOut, CheckCircle2 } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { useAuth } from "@/context/AuthContext"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useProfile } from "@/hooks/useProfile"
+import { PJHomeView } from "@/components/home/PJHomeView"
+import { PFHomeView } from "@/components/home/PFHomeView"
+import { AdminHomeView } from "@/components/home/AdminHomeView"
 
+/**
+ * Página Home única para todos os usuários autenticados.
+ *
+ * Detecta o tipo do usuário via useProfile() e renderiza
+ * condicionalmente a View correta:
+ * - PJ    → PJHomeView
+ * - ADMIN → AdminHomeView
+ * - PF    → PFHomeView (padrão)
+ */
 export function HomePage() {
-  const { user, signOut } = useAuth()
-  const navigate = useNavigate()
+  const { userType, loading } = useProfile()
 
-  const handleSignOut = async () => {
-    await signOut()
-    toast.success("Você saiu da conta.")
-    navigate("/login")
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-4 p-8">
+        <Skeleton className="h-8 w-48 rounded-lg" />
+        <Skeleton className="h-4 w-80 rounded-lg" />
+        <div className="flex gap-4 mt-4">
+          <Skeleton className="h-32 w-full rounded-2xl" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+          <Skeleton className="h-32 w-full rounded-2xl" />
+        </div>
+      </div>
+    )
   }
 
-  return (
-    <div className="min-h-screen w-full bg-slate-50 flex items-center justify-center p-8">
-      <div className="flex flex-col items-center gap-6 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-[#3B0270]/10">
-          <CheckCircle2 className="h-8 w-8 text-[#3B0270]" />
-        </div>
-
-        <div className="flex flex-col gap-2">
-          <h1 className="text-2xl font-bold text-[#3B0270]">Você está logado! 🐾</h1>
-          {user?.email && (
-            <p className="text-sm text-muted-foreground">{user.email}</p>
-          )}
-        </div>
-
-        <Button
-          onClick={handleSignOut}
-          variant="outline"
-          className="h-10 rounded-lg gap-2 border border-[#3B0270]/20 text-[#3B0270] hover:bg-[#3B0270]/5"
-        >
-          <LogOut className="h-4 w-4" />
-          Deslogar
-        </Button>
-      </div>
-    </div>
-  )
+  if (userType === "PJ")    return <PJHomeView />
+  if (userType === "ADMIN") return <AdminHomeView />
+  return <PFHomeView />
 }
