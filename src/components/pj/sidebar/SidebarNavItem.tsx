@@ -1,38 +1,57 @@
-import { NavLink } from "react-router-dom"
+import { Link, useMatch, useResolvedPath } from "react-router-dom"
 import type { LucideIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface SidebarNavItemProps {
   to: string
   icon: LucideIcon
   label: string
   end?: boolean
+  isCollapsed?: boolean
 }
 
 /**
- * Item de navegação reutilizável da sidebar PJ.
- * Aplica estilo ativo, hover e focus baseados na cor primária #3B0270.
- * O ícone herda a cor do texto via currentColor.
+ * Item de navegação reutilizável da sidebar.
+ * No modo expandido: largura total.
+ * No modo recolhido: 1:1 perfeitamente quadrado e centralizado.
  */
-export function SidebarNavItem({ to, icon: Icon, label, end }: SidebarNavItemProps) {
-  return (
-    <NavLink
+export function SidebarNavItem({ to, icon: Icon, label, end, isCollapsed }: SidebarNavItemProps) {
+  const resolved = useResolvedPath(to)
+  const match = useMatch({ path: resolved.pathname, end: end ?? false })
+  const isActive = !!match
+
+  const content = (
+    <Link
       to={to}
-      end={end}
       aria-label={label}
-      className={({ isActive }) =>
-        cn(
-          "flex items-center gap-3 rounded-lg px-3 h-10 min-h-10 w-full text-sm font-semibold transition-colors duration-150",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B0270]/50 focus-visible:ring-offset-1",
-          isActive
-            ? "bg-[#3B0270]/10 text-[#3B0270]"
-            : "text-muted-foreground hover:bg-[#3B0270]/6 hover:text-[#3B0270]"
-        )
-      }
+      className={cn(
+        "flex items-center rounded-lg transition-colors duration-150 overflow-hidden",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3B0270]/50 focus-visible:ring-offset-1",
+        isCollapsed ? "justify-center w-10 h-10 p-0" : "gap-3 px-3 h-10 min-h-10 w-full",
+        isActive
+          ? "bg-[#3B0270]/10 text-[#3B0270]"
+          : "text-muted-foreground hover:bg-[#3B0270]/6 hover:text-[#3B0270]"
+      )}
     >
       <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-      <span>{label}</span>
-    </NavLink>
+      {!isCollapsed && <span className="whitespace-nowrap flex-1 truncate text-sm font-semibold">{label}</span>}
+    </Link>
   )
+
+  if (isCollapsed) {
+    return (
+      <Tooltip delayDuration={0}>
+        <TooltipTrigger asChild>{content}</TooltipTrigger>
+        <TooltipContent side="right" className="font-semibold" sideOffset={16}>{label}</TooltipContent>
+      </Tooltip>
+    )
+  }
+
+  return content
 }
 

@@ -1,6 +1,6 @@
 import type { ReactNode } from "react"
 import { Separator } from "@/components/ui/separator"
-import { DatePeriodFilter, type DatePeriod } from "@/components/layout/DatePeriodFilter"
+import { DatePeriodFilter, type DateFilterValue } from "@/components/layout/DatePeriodFilter"
 
 interface AuthPageHeaderProps {
   /** Título principal da página */
@@ -10,9 +10,9 @@ interface AuthPageHeaderProps {
   /** Mostrar filtro de período de data à direita */
   showDateFilter?: boolean
   /** Período padrão do filtro */
-  defaultPeriod?: DatePeriod
+  defaultPeriod?: DateFilterValue
   /** Callback quando o período muda */
-  onPeriodChange?: (period: DatePeriod) => void
+  onPeriodChange?: (period: DateFilterValue) => void
   /** Ações extras à direita (botões, etc.) — renderizados antes do filtro */
   actions?: ReactNode
 }

@@ -1,5 +1,6 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { PJContentPlaceholder } from "@/components/pj/PJContentPlaceholder"
+import { AuthPageHeader } from "@/components/layout/AuthPageHeader"
 
 /**
  * Página de Configurações da área PJ.
@@ -10,15 +11,14 @@ import { PJContentPlaceholder } from "@/components/pj/PJContentPlaceholder"
  */
 export function PJConfiguracoesPage() {
   return (
-    <div className="flex flex-col flex-1 h-full p-8 gap-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-xl font-bold text-foreground">Configurações</h1>
-        <p className="text-sm text-muted-foreground">
-          Gerencie as informações e configurações da sua organização.
-        </p>
-      </div>
+    <div className="flex flex-1 flex-col h-full">
+      <AuthPageHeader 
+        title="Configurações"
+        subtitle="Gerencie as informações e configurações da sua organização."
+      />
 
-      <Tabs defaultValue="perfil" className="flex flex-col flex-1">
+      <div className="flex flex-1 flex-col p-8 pt-6">
+        <Tabs defaultValue="perfil" className="flex flex-col flex-1">
         <TabsList className="w-fit rounded-lg h-10">
           <TabsTrigger value="perfil" className="rounded-lg text-sm font-semibold">
             Perfil da organização
@@ -41,7 +41,8 @@ export function PJConfiguracoesPage() {
             description="Informe o porte do abrigo, capacidade de animais e estrutura disponível."
           />
         </TabsContent>
-      </Tabs>
+        </Tabs>
+      </div>
     </div>
   )
 }

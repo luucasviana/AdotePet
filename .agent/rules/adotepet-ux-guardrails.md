@@ -22,6 +22,3 @@ trigger: always_on
 - Labels e aria em inputs.
 - Alt text em imagens.
 - Contraste alto em textos essenciais.
-
-## Navegação
-- Exibir o loading na tela sempre que realizar uma ação de navegação.

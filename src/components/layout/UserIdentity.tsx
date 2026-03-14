@@ -1,9 +1,11 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 
 interface UserIdentityProps {
   displayName: string
   avatarUrl?: string
   subtitle?: string
+  isCollapsed?: boolean
 }
 
 /** Gera as iniciais a partir do nome (até 2 letras). */
@@ -21,9 +23,10 @@ export function UserIdentity({
   displayName,
   avatarUrl,
   subtitle = "Adotante",
+  isCollapsed,
 }: UserIdentityProps) {
   return (
-    <div className="flex items-center gap-3 px-4 py-4">
+    <div className={cn("flex items-center gap-3 py-4 w-full overflow-hidden", isCollapsed ? "justify-center px-0" : "px-4")}>
       <Avatar className="h-10 w-10 shrink-0 rounded-lg border border-[#3B0270]/12">
         {avatarUrl && <AvatarImage src={avatarUrl} alt={`Foto de ${displayName}`} />}
         <AvatarFallback className="rounded-lg bg-[#3B0270]/8 text-[#3B0270] text-sm font-bold">
@@ -31,17 +34,19 @@ export function UserIdentity({
         </AvatarFallback>
       </Avatar>
 
-      <div className="flex min-w-0 flex-col">
-        <span
-          className="truncate text-sm font-bold leading-tight text-foreground"
-          title={displayName}
-        >
-          {displayName}
-        </span>
-        <span className="text-xs text-muted-foreground font-medium leading-tight mt-0.5">
-          {subtitle}
-        </span>
-      </div>
+      {!isCollapsed && (
+        <div className="flex min-w-0 flex-col">
+          <span
+            className="truncate text-sm font-bold leading-tight text-foreground"
+            title={displayName}
+          >
+            {displayName}
+          </span>
+          <span className="text-xs text-muted-foreground font-medium leading-tight mt-0.5">
+            {subtitle}
+          </span>
+        </div>
+      )}
     </div>
   )
 }

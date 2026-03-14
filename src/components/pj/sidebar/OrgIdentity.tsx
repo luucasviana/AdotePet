@@ -1,4 +1,5 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { cn } from "@/lib/utils"
 
 export type OrgType = "ONG" | "Abrigo"
 
@@ -6,6 +7,7 @@ interface OrgIdentityProps {
   orgName: string
   orgType: OrgType
   logoUrl?: string
+  isCollapsed?: boolean
 }
 
 /** Gera as iniciais a partir do nome fantasia (até 2 letras). */
@@ -19,9 +21,9 @@ function getInitials(name: string): string {
  * Bloco de identidade da ONG/Abrigo exibido no topo da sidebar PJ.
  * Exibe logo (se disponível) ou Avatar com iniciais, nome fantasia e tipo de conta.
  */
-export function OrgIdentity({ orgName, orgType, logoUrl }: OrgIdentityProps) {
+export function OrgIdentity({ orgName, orgType, logoUrl, isCollapsed }: OrgIdentityProps) {
   return (
-    <div className="flex items-center gap-3 px-4 py-4">
+    <div className={cn("flex items-center gap-3 py-4 w-full overflow-hidden", isCollapsed ? "justify-center px-0" : "px-4")}>
       <Avatar className="h-10 w-10 shrink-0 rounded-lg border border-[#3B0270]/12">
         {logoUrl && <AvatarImage src={logoUrl} alt={`Logo ${orgName}`} />}
         <AvatarFallback
@@ -31,17 +33,19 @@ export function OrgIdentity({ orgName, orgType, logoUrl }: OrgIdentityProps) {
         </AvatarFallback>
       </Avatar>
 
-      <div className="flex min-w-0 flex-col">
-        <span
-          className="truncate text-sm font-bold leading-tight text-foreground"
-          title={orgName}
-        >
-          {orgName}
-        </span>
-        <span className="text-xs text-muted-foreground font-medium leading-tight mt-0.5">
-          {orgType}
-        </span>
-      </div>
+      {!isCollapsed && (
+        <div className="flex min-w-0 flex-col">
+          <span
+            className="truncate text-sm font-bold leading-tight text-foreground"
+            title={orgName}
+          >
+            {orgName}
+          </span>
+          <span className="text-xs text-muted-foreground font-medium leading-tight mt-0.5">
+            {orgType}
+          </span>
+        </div>
+      )}
     </div>
   )
 }
