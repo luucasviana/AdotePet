@@ -8,6 +8,13 @@ export interface Profile {
   id: string
   email: string | null
   user_type: UserType
+  // PJ fields (nullable for PF accounts)
+  company_name?: string | null
+  fantasy_name?: string | null
+  org_type?: string | null
+  logo_url?: string | null
+  // PF fields
+  full_name?: string | null
 }
 
 export interface ProfileContextValue {
@@ -40,18 +47,16 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     supabase
       .from("profiles")
-      .select("id, email, user_type")
+      .select("id, email, user_type, company_name, fantasy_name, org_type, logo_url")
       .eq("id", user.id)
       .single()
       .then(({ data, error }) => {
         if (cancelled) return
         if (error || !data) {
-          // Fallback: derivar do user_metadata se o perfil não existir ainda
+          // Fallback: derive type from user_metadata if profile doesn't exist yet
           const metaTipo = user.user_metadata?.tipo as string | undefined
           const fallbackType: UserType =
             metaTipo?.toLowerCase() === "pj" ? "PJ" : "PF"
-          setProfile(null)
-          // Expose the type via a synthesized profile
           setProfile({ id: user.id, email: user.email ?? null, user_type: fallbackType })
         } else {
           setProfile(data as Profile)

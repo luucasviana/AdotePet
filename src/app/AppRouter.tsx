@@ -10,6 +10,7 @@ import { HomePage } from "@/pages/HomePage"
 import { PJPetsPage } from "@/pages/pj/PJPetsPage"
 import { PJAdocoesPage } from "@/pages/pj/PJAdocoesPage"
 import { PJConfiguracoesPage } from "@/pages/pj/PJConfiguracoesPage"
+import { PJCadastroPetPage } from "@/pages/pj/PJCadastroPetPage"
 
 /**
  * Roteamento da aplicação AdotePet.
@@ -46,6 +47,7 @@ export function AppRouter() {
 
           {/* Funcionalidades PJ */}
           <Route path="pets"          element={<PJPetsPage />} />
+          <Route path="pets/novo"     element={<PJCadastroPetPage />} />
           <Route path="adocoes"       element={<PJAdocoesPage />} />
           <Route path="configuracoes" element={<PJConfiguracoesPage />} />
         </Route>

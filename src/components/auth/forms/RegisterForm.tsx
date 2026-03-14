@@ -20,9 +20,9 @@ import { Separator } from "@/components/ui/separator"
 import { supabase } from "@/lib/supabase"
 import { NavigationLoader } from "@/components/shared/NavigationLoader"
 
-// ─── Zod schemas ─────────────────────────────────────────────────────────────
+import { maskCPF, maskCNPJ, unmask } from "@/lib/mask"
 
-const cpfPattern = /^\d{11}$/
+// ─── Zod schemas ─────────────────────────────────────────────────────────────
 
 const pfSchema = z
   .object({
@@ -32,7 +32,7 @@ const pfSchema = z
     cpf: z
       .string()
       .optional()
-      .refine((v) => !v || cpfPattern.test(v), "CPF deve ter 11 dígitos numéricos"),
+      .refine((v) => !v || unmask(v).length === 11, "CPF deve ter 11 dígitos numéricos"),
     senha: z.string().min(6, "Senha deve ter no mínimo 6 caracteres"),
     confirmarSenha: z.string().min(1, "Confirme a senha"),
   })
@@ -46,9 +46,7 @@ const pjSchema = z
     email: z.string().min(1, "Email é obrigatório").email("Email inválido"),
     cnpj: z
       .string()
-      .min(14, "CNPJ deve ter 14 dígitos")
-      .max(14, "CNPJ deve ter 14 dígitos")
-      .regex(/^\d+$/, "CNPJ deve conter apenas números"),
+      .refine((v) => unmask(v).length === 14, "CNPJ deve ter 14 dígitos"),
     nomeOrganizacao: z.string().min(1, "Nome da empresa é obrigatório"),
     nomeFantasia: z.string().optional(),
     tipoOrganizacao: z.string().min(1, "Tipo de organização é obrigatório"),
@@ -86,8 +84,13 @@ function PfForm() {
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PfValues>({ resolver: zodResolver(pfSchema) })
+
+  useEffect(() => {
+    return () => reset()
+  }, [reset])
 
   const onSubmit = async (data: PfValues) => {
     const { error } = await supabase.auth.signUp({
@@ -98,7 +101,7 @@ function PfForm() {
           tipo: "pf",
           nome_completo: data.nomeCompleto,
           data_nascimento: data.dataNascimento,
-          cpf: data.cpf ?? null,
+          cpf: data.cpf ? unmask(data.cpf) : null,
         },
       },
     })
@@ -113,16 +116,18 @@ function PfForm() {
     }
 
     toast.success("Conta criada! Verifique seu email para confirmar o cadastro.")
+    reset()
   }
 
   return (
     <>
       {isSubmitting && <NavigationLoader />}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate autoComplete="off" className="flex flex-col gap-4">
         {/* Nome */}
         <div className="flex flex-col gap-2">
           <label htmlFor="pf-nome" className="text-sm font-medium">Nome completo</label>
           <Input id="pf-nome" placeholder="Seu nome completo" className="h-10 rounded-lg"
+            autoComplete="off"
             aria-invalid={!!errors.nomeCompleto}
             aria-describedby={errors.nomeCompleto ? "pf-nome-error" : undefined}
             {...register("nomeCompleto")} />
@@ -133,6 +138,7 @@ function PfForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="pf-email" className="text-sm font-medium">Email</label>
           <Input id="pf-email" type="email" placeholder="seu@email.com" className="h-10 rounded-lg"
+            autoComplete="off"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "pf-email-error" : undefined}
             {...register("email")} />
@@ -143,7 +149,7 @@ function PfForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="pf-dob" className="text-sm font-medium">Data de nascimento</label>
         <div className="relative">
-          <Input id="pf-dob" type="date" className="h-10 rounded-lg pr-10"
+          <Input id="pf-dob" type="date" className="h-10 rounded-lg pr-10" autoComplete="off"
             aria-invalid={!!errors.dataNascimento}
             aria-describedby={errors.dataNascimento ? "pf-dob-error" : undefined}
             {...register("dataNascimento")} />
@@ -155,10 +161,15 @@ function PfForm() {
         {/* CPF (opcional) */}
         <div className="flex flex-col gap-2">
           <label htmlFor="pf-cpf" className="text-sm font-medium">CPF <span className="text-muted-foreground font-normal">(opcional)</span></label>
-          <Input id="pf-cpf" placeholder="11 dígitos, sem pontuação" maxLength={11} className="h-10 rounded-lg"
+          <Input id="pf-cpf" placeholder="000.000.000-00" maxLength={14} className="h-10 rounded-lg"
+            autoComplete="off"
             aria-invalid={!!errors.cpf}
             aria-describedby={errors.cpf ? "pf-cpf-error" : undefined}
-            {...register("cpf")} />
+            {...register("cpf", {
+              onChange: (e) => {
+                e.target.value = maskCPF(e.target.value)
+              }
+            })} />
           {errors.cpf && <p id="pf-cpf-error" className="text-xs text-destructive" role="alert">{errors.cpf.message}</p>}
         </div>
 
@@ -166,6 +177,7 @@ function PfForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="pf-senha" className="text-sm font-medium">Senha</label>
           <Input id="pf-senha" type="password" className="h-10 rounded-lg"
+            autoComplete="new-password"
             aria-invalid={!!errors.senha}
             aria-describedby={errors.senha ? "pf-senha-error" : undefined}
             {...register("senha")} />
@@ -176,6 +188,7 @@ function PfForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="pf-confirmar" className="text-sm font-medium">Confirmar senha</label>
           <Input id="pf-confirmar" type="password" className="h-10 rounded-lg"
+            autoComplete="new-password"
             aria-invalid={!!errors.confirmarSenha}
             aria-describedby={errors.confirmarSenha ? "pf-confirmar-error" : undefined}
             {...register("confirmarSenha")} />
@@ -198,8 +211,13 @@ function PjForm() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PjValues>({ resolver: zodResolver(pjSchema) })
+
+  useEffect(() => {
+    return () => reset()
+  }, [reset])
 
   const [isFetchingCnpj, setIsFetchingCnpj] = useState(false)
   const [cnpjError, setCnpjError] = useState<string | null>(null)
@@ -208,8 +226,10 @@ function PjForm() {
 
   // Auto-fetch company info from Brasil API when CNPJ has 14 digits
   useEffect(() => {
-    if (!cnpjValue || cnpjValue.length !== 14) {
-      if (cnpjValue && cnpjValue.length < 14) {
+    const unmaskedCnpj = unmask(cnpjValue || "")
+
+    if (!unmaskedCnpj || unmaskedCnpj.length !== 14) {
+      if (unmaskedCnpj && unmaskedCnpj.length < 14) {
         setValue("nomeOrganizacao", "")
         setValue("nomeFantasia", "")
         setCnpjError(null)
@@ -221,7 +241,7 @@ function PjForm() {
       setIsFetchingCnpj(true)
       setCnpjError(null)
       try {
-        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjValue}`)
+        const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${unmaskedCnpj}`)
         if (!res.ok) throw new Error("CNPJ não encontrado")
         const data = await res.json()
         setValue("nomeOrganizacao", data.razao_social ?? "", { shouldValidate: true })
@@ -245,7 +265,7 @@ function PjForm() {
       options: {
         data: {
           tipo: "pj",
-          cnpj: data.cnpj,
+          cnpj: unmask(data.cnpj),
           nome_organizacao: data.nomeOrganizacao,
           nome_fantasia: data.nomeFantasia ?? null,
           tipo_organizacao: data.tipoOrganizacao,
@@ -263,16 +283,18 @@ function PjForm() {
     }
 
     toast.success("Conta criada! Verifique seu email para confirmar o cadastro.")
+    reset()
   }
 
   return (
     <>
       {isSubmitting && <NavigationLoader />}
-      <form onSubmit={handleSubmit(onSubmit)} noValidate className="flex flex-col gap-4">
+      <form onSubmit={handleSubmit(onSubmit)} noValidate autoComplete="off" className="flex flex-col gap-4">
         {/* Email */}
         <div className="flex flex-col gap-2">
           <label htmlFor="pj-email" className="text-sm font-medium">Email</label>
           <Input id="pj-email" type="email" placeholder="contato@empresa.com.br" className="h-10 rounded-lg"
+            autoComplete="off"
             aria-invalid={!!errors.email}
             aria-describedby={errors.email ? "pj-email-error" : undefined}
             {...register("email")} />
@@ -283,11 +305,16 @@ function PjForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="pj-cnpj" className="text-sm font-medium">CNPJ</label>
           <div className="relative">
-            <Input id="pj-cnpj" placeholder="14 dígitos, sem pontuação" maxLength={14}
+            <Input id="pj-cnpj" placeholder="00.000.000/0000-00" maxLength={18}
+              autoComplete="off"
               className={`h-10 rounded-lg pr-10 ${isFetchingCnpj ? "opacity-70" : ""}`}
               aria-invalid={!!errors.cnpj || !!cnpjError}
               aria-describedby={errors.cnpj ? "pj-cnpj-error" : cnpjError ? "pj-cnpj-api-error" : undefined}
-              {...register("cnpj")} />
+              {...register("cnpj", {
+                onChange: (e) => {
+                  e.target.value = maskCNPJ(e.target.value)
+                }
+              })} />
             {isFetchingCnpj && (
               <div className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 rounded-full border-2 border-[#3B0270]/30 border-t-[#3B0270] animate-spin" />
             )}
@@ -304,6 +331,7 @@ function PjForm() {
           </label>
           <Input id="pj-nome" placeholder="Preenchido automaticamente" className="h-10 rounded-lg bg-muted/50 cursor-not-allowed"
             readOnly
+            autoComplete="off"
             aria-readonly="true"
             aria-invalid={!!errors.nomeOrganizacao}
             aria-describedby={errors.nomeOrganizacao ? "pj-nome-error" : undefined}
@@ -318,6 +346,7 @@ function PjForm() {
             <span className="ml-2 text-xs text-muted-foreground font-normal">(opcional, editável)</span>
           </label>
           <Input id="pj-fantasia" placeholder="Nome fantasia da empresa" className="h-10 rounded-lg"
+            autoComplete="off"
             {...register("nomeFantasia")} />
         </div>
 
@@ -341,6 +370,7 @@ function PjForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="pj-senha" className="text-sm font-medium">Senha</label>
           <Input id="pj-senha" type="password" className="h-10 rounded-lg"
+            autoComplete="new-password"
             aria-invalid={!!errors.senha}
             aria-describedby={errors.senha ? "pj-senha-error" : undefined}
             {...register("senha")} />
@@ -351,6 +381,7 @@ function PjForm() {
         <div className="flex flex-col gap-2">
           <label htmlFor="pj-confirmar" className="text-sm font-medium">Confirmar senha</label>
           <Input id="pj-confirmar" type="password" className="h-10 rounded-lg"
+            autoComplete="new-password"
             aria-invalid={!!errors.confirmarSenha}
             aria-describedby={errors.confirmarSenha ? "pj-confirmar-error" : undefined}
             {...register("confirmarSenha")} />

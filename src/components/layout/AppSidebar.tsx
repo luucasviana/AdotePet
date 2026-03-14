@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
 import { LogOut, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -25,7 +25,7 @@ import { cn } from "@/lib/utils"
  */
 export function AppSidebar() {
   const { user, signOut } = useAuth()
-  const { userType } = useProfile()
+  const { userType, profile } = useProfile()
   const navigate = useNavigate()
   
   // Estado para controlar se a sidebar está recolhida ou expandida
@@ -39,15 +39,20 @@ export function AppSidebar() {
 
   const navSection = NAV_CONFIG[userType]
 
-  // ── Derivar dados de identidade do user_metadata ──────────────────────
+  // ── Derivar dados de identidade ─────────────────────────────────────────
+  // Para PJ: priorizar dados da tabela profiles (logo e nome atualizados)
+  // Para PF/ADMIN: usar nome do user_metadata (auth)
   const orgName: string =
+    profile?.fantasy_name ||
+    profile?.company_name ||
     user?.user_metadata?.nome_fantasia ||
     user?.user_metadata?.full_name ||
     user?.email?.split("@")[0] ||
     "Minha Organização"
 
   const orgType: OrgType =
-    user?.user_metadata?.tipo_conta === "abrigo" ? "Abrigo" : "ONG"
+    (profile?.org_type as OrgType) ||
+    (user?.user_metadata?.tipo_conta === "abrigo" ? "Abrigo" : "ONG")
 
   const displayName: string =
     user?.user_metadata?.full_name ||
@@ -55,7 +60,8 @@ export function AppSidebar() {
     user?.email?.split("@")[0] ||
     "Usuário"
 
-  const logoUrl: string | undefined = user?.user_metadata?.logo_url
+  // logo_url vem da tabela profiles (atualizado ao salvar configurações)
+  const logoUrl: string | undefined = profile?.logo_url || undefined
   const avatarUrl: string | undefined = user?.user_metadata?.avatar_url
 
   // ── Subtítulo Admin ───────────────────────────────────────────────────
@@ -109,21 +115,27 @@ export function AppSidebar() {
                   <Tooltip delayDuration={0}>
                     <TooltipTrigger asChild>
                       <Button
+                        asChild
                         className="w-10 h-10 p-0 rounded-lg bg-[#3B0270] text-white hover:bg-[#3B0270]/90 focus-visible:ring-2 focus-visible:ring-[#3B0270]/50 shadow-sm transition-all duration-150 flex items-center justify-center shrink-0"
                         aria-label="Cadastrar novo pet"
                       >
-                        <Plus className="h-5 w-5 shrink-0" aria-hidden="true" />
+                        <Link to="/home/pets/novo">
+                          <Plus className="h-5 w-5 shrink-0" aria-hidden="true" />
+                        </Link>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent side="right" className="font-semibold" sideOffset={16}>Cadastrar pet</TooltipContent>
                   </Tooltip>
                 ) : (
                   <Button
+                    asChild
                     className="w-full h-10 rounded-lg gap-2 bg-[#3B0270] text-white font-bold hover:bg-[#3B0270]/90 focus-visible:ring-2 focus-visible:ring-[#3B0270]/50 focus-visible:ring-offset-1 shadow-sm transition-all duration-150 overflow-hidden"
                     aria-label="Cadastrar novo pet"
                   >
-                    <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    <span className="whitespace-nowrap">Cadastrar pet</span>
+                    <Link to="/home/pets/novo">
+                      <Plus className="h-4 w-4 shrink-0" aria-hidden="true" />
+                      <span className="whitespace-nowrap">Cadastrar pet</span>
+                    </Link>
                   </Button>
                 )}
               </div>

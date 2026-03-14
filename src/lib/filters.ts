@@ -1,4 +1,4 @@
-export type Species = "dog" | "cat"
+export type Species = "dog" | "cat" | "bird" | "reptile"
 export type Size = "small" | "medium" | "large"
 export type Gender = "male" | "female"
 
@@ -12,6 +12,8 @@ export function mapSpeciesToCanonical(value: string): Species | "all" {
     const normalized = normalizeText(value)
     if (normalized === "cachorro" || normalized === "dog") return "dog"
     if (normalized === "gato" || normalized === "cat") return "cat"
+    if (normalized === "ave" || normalized === "bird" || normalized === "passaro") return "bird"
+    if (normalized === "reptil" || normalized === "reptile") return "reptile"
     return "all"
 }
 
@@ -34,6 +36,8 @@ export function mapGenderToCanonical(value: string): Gender | "all" {
 export function displaySpecies(value: string): string {
     if (value === "dog") return "Cachorro"
     if (value === "cat") return "Gato"
+    if (value === "bird") return "Ave"
+    if (value === "reptile") return "Réptil"
     return value
 }
 
