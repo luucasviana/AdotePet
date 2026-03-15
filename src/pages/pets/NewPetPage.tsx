@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useParams } from "react-router-dom"
 import { useForm, Controller, FormProvider, useFormContext } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { z } from "zod"
 import { toast } from "sonner"
 import type { LucideIcon } from "lucide-react"
 import {
-  Upload, Trash2, Star, Info, ChevronLeft, CheckCircle2,
+  Upload, Trash2, Star, Info, CheckCircle2,
   Dog, Cat, Bird, Turtle, Check,
   Zap, Heart, Smile, Wind, Shield, Leaf, Search, Users, EyeOff,
   Feather, Tag, Lightbulb, Flame, Music, Home, UserCheck
@@ -14,6 +14,7 @@ import {
 
 import { supabase } from "@/lib/supabase"
 import { registerPet } from "@/lib/actions/registerPet"
+import { updatePet } from "@/lib/actions/updatePet"
 
 import { AuthPageHeader } from "@/components/layout/AuthPageHeader"
 import { Button } from "@/components/ui/button"
@@ -36,9 +37,10 @@ const petFormSchema = z.object({
   breed: z.string().min(1, "A raça é obrigatória (informe SRD se não souber)."),
 
   photos: z.array(z.object({
-    file: z.instanceof(File),
+    file: z.instanceof(File).optional(),
     previewUrl: z.string(),
-    is_primary: z.boolean()
+    is_primary: z.boolean(),
+    id: z.string().optional() // For existing photos
   }))
     .min(3, "Adicione no mínimo 3 fotos.")
     .max(5, "Adicione no máximo 5 fotos.")
@@ -597,30 +599,34 @@ function Step4Description() {
 
 // ─── Step 5 — Sucesso ────────────────────────────────────────────────────────
 
-function Step5Success({ onNewPet }: { onNewPet: () => void }) {
+function Step5Success({ onNewPet, isEditMode }: { onNewPet: () => void; isEditMode: boolean }) {
   const navigate = useNavigate()
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-in zoom-in-95 fade-in duration-500">
       <div className="w-20 h-20 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center mb-6 shadow-sm border border-emerald-100">
         <Check className="w-10 h-10 stroke-[2.5]" />
       </div>
-      <h2 className="text-2xl font-bold font-sans text-foreground mb-2">Pet cadastrado com sucesso!</h2>
+      <h2 className="text-2xl font-bold font-sans text-foreground mb-2">
+        {isEditMode ? "Pet atualizado com sucesso!" : "Pet cadastrado com sucesso!"}
+      </h2>
       <p className="text-sm text-muted-foreground font-sans max-w-sm mx-auto mb-8 leading-relaxed">
-        Mais um amigo está um passo mais perto de encontrar um novo lar. Obrigado por fazer a diferença.
+        {isEditMode 
+          ? "As informações do pet foram atualizadas publicamente." 
+          : "Mais um amigo está um passo mais perto de encontrar um novo lar. Obrigado por fazer a diferença."}
       </p>
       <div className="flex flex-col sm:flex-row gap-3 w-full max-w-xs">
         <Button
           onClick={() => navigate("/home/pets")}
           className="h-10 w-full bg-primary hover:bg-[#2d0254] text-primary-foreground font-sans font-medium rounded-lg"
         >
-          Ver pets cadastrados
+          {isEditMode ? "Voltar para lista de pets" : "Ver pets cadastrados"}
         </Button>
         <Button
           onClick={onNewPet}
           variant="outline"
           className="h-10 w-full rounded-lg font-sans font-medium"
         >
-          Cadastrar novo pet
+          {isEditMode ? "Ver pet" : "Cadastrar novo pet"}
         </Button>
       </div>
     </div>
@@ -629,8 +635,9 @@ function Step5Success({ onNewPet }: { onNewPet: () => void }) {
 
 // ─── Componente Principal ────────────────────────────────────────────────────
 
-export function PJCadastroPetPage() {
-  const navigate = useNavigate()
+export function NewPetPage() {
+  const { petId } = useParams<{ petId: string }>()
+  const isEditMode = !!petId
 
   const [colors, setColors] = useState<{ id: string; hex: string; label: string }[]>([])
   const [traits, setTraits] = useState<{ id: string; label: string }[]>([])
@@ -656,8 +663,9 @@ export function PJCadastroPetPage() {
     }
   })
 
+  // Carregar dados mestre de formulário e tentar obter ID se for edição
   useEffect(() => {
-    async function loadCatalogs() {
+    async function loadData() {
       try {
         const [colorsRes, traitsRes] = await Promise.all([
           supabase.from("pet_colors").select("id, hex, label").eq("is_active", true).order("sort_order"),
@@ -665,12 +673,49 @@ export function PJCadastroPetPage() {
         ])
         if (colorsRes.data) setColors(colorsRes.data)
         if (traitsRes.data) setTraits(traitsRes.data)
-      } catch {
-        toast.error("Erro ao carregar opções do formulário.")
+
+        if (isEditMode && petId) {
+          const { data: petData, error } = await supabase
+            .from("pets")
+            .select(`
+              *,
+              pet_photos (id, file_url, sort_order, is_primary),
+              pet_color_assignments (color_id),
+              pet_trait_assignments (trait_id)
+            `)
+            .eq("id", petId)
+            .single()
+
+          if (error || !petData) throw new Error("Pet não encontrado")
+
+          // Popular Form com dados reais
+          form.reset({
+            name: petData.name || "",
+            breed: petData.breed || "",
+            description: petData.description || "",
+            species: petData.species,
+            sex: petData.sex,
+            size: petData.size,
+            age_range: petData.age_range,
+            neutered_status: petData.neutered_status,
+            color_ids: petData.pet_color_assignments.map((c: any) => c.color_id),
+            trait_ids: petData.pet_trait_assignments.map((t: any) => t.trait_id),
+            photos: (petData.pet_photos || [])
+              .sort((a: any, b: any) => a.sort_order - b.sort_order)
+              .map((p: any) => ({
+                id: p.id,
+                previewUrl: p.file_url,
+                is_primary: p.is_primary,
+                file: undefined // We don't have the real File object for existing ones
+              }))
+          })
+        }
+      } catch (err) {
+        toast.error("Erro ao carregar os dados para a página.")
       }
     }
-    loadCatalogs()
-  }, [])
+    loadData()
+  }, [petId, isEditMode, form])
 
   const nextStep = async () => {
     const fieldsToValidate = STEP_FIELDS[currentStep]
@@ -690,12 +735,17 @@ export function PJCadastroPetPage() {
     setIsSubmitting(true)
     try {
       const uploadedPhotos = await Promise.all(data.photos.map(async (p, index) => {
+        // Se ela vier com undefined em "file", significa que já é uma imagem upada anteriormente e mantivemos.
+        if (!p.file) {
+          return { file_url: p.previewUrl, sort_order: index + 1, is_primary: p.is_primary }
+        }
+
         const fileExt = p.file.name.split(".").pop()
         const fileName = `${Math.random()}.${fileExt}`
         let file_url = ""
         const { error: uploadError } = await supabase.storage.from("pets").upload(fileName, p.file)
         if (uploadError) {
-          file_url = `https://mock.example.com/pet_photo_${Date.now()}_${index}.jpg`
+          file_url = p.previewUrl // Fallback error
         } else {
           const { data: publicUrlData } = supabase.storage.from("pets").getPublicUrl(fileName)
           file_url = publicUrlData.publicUrl
@@ -703,33 +753,55 @@ export function PJCadastroPetPage() {
         return { file_url, sort_order: index + 1, is_primary: p.is_primary }
       }))
 
-      const result = await registerPet({
-        name: data.name,
-        species: data.species as any,
-        sex: data.sex as any,
-        size: data.size as any,
-        breed: data.breed,
-        age_range: data.age_range as any,
-        neutered_status: data.neutered_status as any,
-        description: data.description || undefined,
-        photos: uploadedPhotos,
-        color_ids: data.color_ids,
-        trait_ids: data.trait_ids
-      })
+      if (isEditMode && petId) {
+        await updatePet({
+          petId,
+          name: data.name,
+          species: data.species as any,
+          sex: data.sex as any,
+          size: data.size as any,
+          breed: data.breed,
+          age_range: data.age_range as any,
+          neutered_status: data.neutered_status as any,
+          description: data.description || undefined,
+          photos: uploadedPhotos,
+          color_ids: data.color_ids,
+          trait_ids: data.trait_ids
+        })
+      } else {
+        await registerPet({
+          name: data.name,
+          species: data.species as any,
+          sex: data.sex as any,
+          size: data.size as any,
+          breed: data.breed,
+          age_range: data.age_range as any,
+          neutered_status: data.neutered_status as any,
+          description: data.description || undefined,
+          photos: uploadedPhotos,
+          color_ids: data.color_ids,
+          trait_ids: data.trait_ids
+        })
+      }
 
-      if (result.pet) setCurrentStep(4)
+      setCurrentStep(4)
     } catch (error: any) {
       console.error(error)
-      toast.error(error.message || "Erro inesperado ao cadastrar o pet.")
+      toast.error(error.message || `Erro inesperado ao ${isEditMode ? "atualizar" : "cadastrar"} o pet.`)
       form.trigger()
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  const handleReset = () => {
-    form.reset()
-    setCurrentStep(0)
+  const handleResetOrNavigate = () => {
+    if (isEditMode && petId) {
+      const navigate = useNavigate()
+      navigate(`/home/pets/${petId}`)
+    } else {
+      form.reset()
+      setCurrentStep(0)
+    }
   }
 
   const currentStepMeta = STEPS[Math.min(currentStep, 3)]
@@ -738,18 +810,8 @@ export function PJCadastroPetPage() {
     <div className="flex flex-1 flex-col h-full bg-slate-50/50">
       {currentStep < 4 && (
         <AuthPageHeader
-          title="Cadastrar novo pet"
-          subtitle="Preencha os dados por etapas para disponibilizá-lo para adoção."
-          actions={
-            <Button
-              variant="ghost"
-              onClick={() => navigate("/home/pets")}
-              className="gap-2 h-10 text-muted-foreground hover:text-foreground rounded-lg font-sans"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              Sair
-            </Button>
-          }
+          title={isEditMode ? "Editar pet" : "Cadastrar novo pet"}
+          subtitle={isEditMode ? "Atualize as informações do pet." : "Preencha os dados por etapas para disponibilizá-lo para adoção."}
         />
       )}
 
@@ -820,7 +882,7 @@ export function PJCadastroPetPage() {
                 </Card>
               )}
 
-              {currentStep === 4 && <Step5Success onNewPet={handleReset} />}
+              {currentStep === 4 && <Step5Success onNewPet={handleResetOrNavigate} isEditMode={isEditMode} />}
             </form>
           </FormProvider>
 

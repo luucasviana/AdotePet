@@ -57,8 +57,22 @@ export function AuthLayout({ children, skipSplash = false }: AuthLayoutProps) {
 
   // DESKTOP: 2-column split layout
   // MOBILE (after splash): just the form, full-width
+  
+  // Check for pending redirect context
+  const hasPendingPet = !!localStorage.getItem("pending_pet_redirect")
+
   return (
-    <div className="min-h-screen w-full bg-slate-50 flex items-center justify-center p-8">
+    <div className="min-h-screen w-full bg-slate-50 flex flex-col items-center justify-center p-8">
+      
+      {/* Contextual Message for "Ver detalhes" click */}
+      {hasPendingPet && (
+        <div className="w-full max-w-5xl mb-6 bg-primary/10 border border-primary/20 rounded-xl p-4 text-center">
+            <p className="text-[#3B0270] font-medium text-sm md:text-base">
+              Para ver os detalhes deste pet, você precisa estar logado. Se ainda não tiver uma conta, faça seu cadastro para continuar.
+            </p>
+        </div>
+      )}
+
       <div className="w-full max-w-5xl md:grid md:grid-cols-2 md:gap-8 md:items-stretch">
         {/* Left: Form card */}
         <div className="w-full">

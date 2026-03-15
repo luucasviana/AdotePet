@@ -1,3 +1,5 @@
+import { useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useProfile } from "@/hooks/useProfile"
 import { PJHomeView } from "@/components/home/PJHomeView"
@@ -15,6 +17,17 @@ import { AdminHomeView } from "@/components/home/AdminHomeView"
  */
 export function HomePage() {
   const { userType, loading } = useProfile()
+  const navigate = useNavigate()
+
+  useEffect(() => {
+    const pendingPetId = localStorage.getItem("pending_pet_redirect")
+    if (pendingPetId) {
+      localStorage.removeItem("pending_pet_redirect")
+      // Adding a small delay to ensure loading state of auth/profile has settled
+      // though typically not strictly needed, it avoids race conditions if profile takes a moment
+      setTimeout(() => navigate(`/home/pets/${pendingPetId}`), 0)
+    }
+  }, [navigate])
 
   if (loading) {
     return (
