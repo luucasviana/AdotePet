@@ -3,8 +3,6 @@ import {
   PawPrint,
   Heart,
   Settings,
-  Search,
-  Bookmark,
   Users,
   Building2,
   BarChart3,
@@ -43,11 +41,9 @@ export const NAV_CONFIG: Record<UserType, NavSection> = {
 
   PF: {
     main: [
-      { to: "/home",              icon: Home,     label: "Início",    end: true },
-      { to: "/home/buscar",       icon: Search,   label: "Buscar pets" },
-      { to: "/home/favoritos",    icon: Bookmark, label: "Favoritos" },
-      { to: "/home/adocoes",      icon: Heart,    label: "Minhas adoções" },
-      { to: "/home/configuracoes", icon: Settings, label: "Configurações" },
+      { to: "/home",              icon: Home,      label: "Início",        end: true },
+      { to: "/home/quero-adotar", icon: Heart,     label: "Quero adotar" },
+      { to: "/home/parceiros",    icon: Building2, label: "Parceiros" },
     ],
     footer: [],
   },

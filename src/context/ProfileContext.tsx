@@ -15,6 +15,8 @@ export interface Profile {
   logo_url?: string | null
   // PF fields
   full_name?: string | null
+  social_name?: string | null
+  avatar_url?: string | null
 }
 
 export interface ProfileContextValue {
@@ -47,7 +49,7 @@ export function ProfileProvider({ children }: { children: ReactNode }) {
 
     supabase
       .from("profiles")
-      .select("id, email, user_type, company_name, fantasy_name, org_type, logo_url")
+      .select("id, email, user_type, company_name, fantasy_name, org_type, logo_url, full_name, social_name, avatar_url")
       .eq("id", user.id)
       .single()
       .then(({ data, error }) => {

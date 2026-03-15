@@ -20,7 +20,21 @@ function deg2rad(deg: number): number {
 
 export function formatDistance(distanceKm: number): string {
     if (distanceKm < 1) {
-        return `${Math.round(distanceKm * 1000)}m`;
+        return `${Math.round(distanceKm * 1000)} mt ${distanceKm < 0.05 ? "(Mto. Perto)" : ""}`;
     }
     return `${distanceKm.toFixed(1).replace('.', ',')} km`;
+}
+
+/**
+ * Retorna logradouro resumido usando cidade, estado e opcionalmente bairro.
+ * @example "Bela Vista, São Paulo - SP"
+ * @example "Rio de Janeiro - RJ"
+ */
+export function formatLocationShort(city?: string | null, state?: string | null, neighborhood?: string | null): string {
+    const parts = [neighborhood, city].filter(Boolean) as string[];
+    let formatted = parts.join(", ");
+    if (state) {
+        formatted += formatted ? ` - ${state}` : state;
+    }
+    return formatted || "Localização não informada";
 }

@@ -48,7 +48,8 @@ import {
   RefreshCcw
 } from "lucide-react"
 import { displaySpecies, displaySize, displayGender } from "@/lib/filters"
-import { cn } from "@/lib/utils"
+import { cn, getWhatsAppLink } from "@/lib/utils"
+import { expressAdoptionInterest } from "@/lib/actions/adoptions"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,11 @@ interface PetDetail {
   colors: PetColor[]
   traits: PetTrait[]
 }
+
+// ─── Imports adicionais que não estavam aqui mas precisamos pro helper e pro Widget ───
+import { formatLocationShort } from "@/lib/geo"
+import { ResponsibleProfileCard } from "@/components/pets/ResponsibleProfileCard"
+import type { ResponsibleProfileData, ResponsibleType } from "@/components/pets/ResponsibleProfileCard"
 
 // ─── Display helpers ──────────────────────────────────────────────────────────
 
@@ -206,16 +212,43 @@ function PhotoGallery({ photos }: { photos: PetPhoto[] }) {
 function DetailSkeleton() {
   return (
     <div className="mx-auto max-w-3xl w-full pt-6 flex flex-col gap-6 px-4 lg:px-8">
+      {/* 1. Photo */}
       <Skeleton className="h-80 w-full rounded-2xl" />
-      <div className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-48 rounded-lg" />
-        <Skeleton className="h-5 w-32 rounded-lg" />
+
+      {/* 2. Responsible Card */}
+      <div className="rounded-2xl border border-border shadow-sm bg-white overflow-hidden">
+        <div className="p-6 md:p-8 flex flex-col md:flex-row gap-6">
+          <div className="flex gap-4 flex-1">
+             <Skeleton className="h-16 w-16 shrink-0 rounded-2xl" />
+             <div className="flex flex-col gap-2 w-full max-w-[200px]">
+               <Skeleton className="h-5 w-full" />
+               <Skeleton className="h-4 w-3/4" />
+             </div>
+          </div>
+          <div className="flex flex-col gap-2 w-full md:w-auto md:min-w-[250px]">
+            <Skeleton className="h-12 w-full rounded-lg" />
+          </div>
+        </div>
       </div>
-      <Skeleton className="h-px w-full" />
-      <div className="grid grid-cols-2 gap-4">
-        {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-12 w-full rounded-lg" />
-        ))}
+
+      {/* 3. Main Pet Detail Card */}
+      <div className="rounded-2xl border border-border shadow-sm bg-white overflow-hidden">
+        <div className="p-6 md:p-8 flex flex-col gap-6">
+          <div className="flex flex-col gap-3">
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-8 w-48 rounded-lg" />
+              <Skeleton className="h-6 w-24 rounded-lg" />
+            </div>
+            <Skeleton className="h-5 w-32 rounded-lg" />
+            <Skeleton className="h-5 w-40 rounded-lg" />
+          </div>
+          <Skeleton className="h-px w-full" />
+          <div className="grid grid-cols-2 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   )
@@ -252,6 +285,12 @@ export function PetDetailPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
 
+  // Adoption CTA state
+  const [currentUserType, setCurrentUserType] = useState<string | null>(null)
+  const [hasActiveAdoption, setHasActiveAdoption] = useState(false)
+  const [isAdopting, setIsAdopting] = useState(false)
+  const [responsibleData, setResponsibleData] = useState<ResponsibleProfileData | null>(null)
+
   // Dialog States
   const [isStatusDialogOpen, setIsStatusDialogOpen] = useState(false)
   const [pendingStatus, setPendingStatus] = useState<string>("available")
@@ -267,6 +306,35 @@ export function PetDetailPage() {
       return
     }
     loadPetDetail(petId)
+  }, [petId])
+
+  // Load current user type once
+  useEffect(() => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("user_type")
+        .eq("id", user.id)
+        .single()
+      setCurrentUserType(profile?.user_type ?? null)
+    })
+  }, [])
+
+  // Check if current user has active adoption for this pet
+  useEffect(() => {
+    if (!petId) return
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
+      if (!user) return
+      const { data } = await supabase
+        .from("adoptions")
+        .select("id")
+        .eq("pet_id", petId)
+        .eq("adopter_user_id", user.id)
+        .in("status", ["interview", "visit_scheduled"])
+        .maybeSingle()
+      setHasActiveAdoption(!!data)
+    })
   }, [petId])
 
   const loadPetDetail = async (id: string) => {
@@ -303,6 +371,33 @@ export function PetDetailPage() {
       if (petRes.error || !petRes.data) throw new Error("Pet não encontrado")
 
       const p = petRes.data
+
+      // Fetch Profile Separadinho pra pegar avatar/location etc
+      const { data: respProfile } = await supabase
+        .from("profiles")
+        .select("id, user_type, company_name, fantasy_name, org_type, logo_url, full_name, social_name, avatar_url, email, city, address_state, neighborhood")
+        .eq("id", p.responsible_profile_id)
+        .maybeSingle()
+
+      if (respProfile) {
+        const type = (respProfile.user_type as ResponsibleType) || "PF"
+        const isPJ = type === "PJ"
+        const name = isPJ 
+          ? (respProfile.fantasy_name || respProfile.company_name || "Organização")
+          : (respProfile.social_name || respProfile.full_name || "Adotante")
+        
+        setResponsibleData({
+          id: respProfile.id,
+          userType: type,
+          name,
+          orgType: respProfile.org_type || undefined,
+          email: respProfile.email || undefined,
+          avatarOrLogoUrl: respProfile.logo_url || respProfile.avatar_url || undefined,
+          locationShort: formatLocationShort(respProfile.city, respProfile.address_state, respProfile.neighborhood),
+          // Se formos exibir a distância daquele geomock futuramente, entraria aqui. 
+          // Por agora deixamos vazia ou string fixa, dependendo de futuras coordenadas.
+        })
+      }
 
       const photos: PetPhoto[] = (photosRes.data ?? []).map((row: any) => ({
         id: row.id,
@@ -474,62 +569,91 @@ export function PetDetailPage() {
             {/* ── Photo Gallery ─────────────────────────────────── */}
             <PhotoGallery photos={pet.photos} />
 
-            {/* ── Hero: name + status + actions ────────────────── */}
+            {/* ── Widget do Responsável (Bloco Isolado) ────────────────── */}
+            <ResponsibleProfileCard
+              profile={responsibleData}
+              loading={loading}
+              error={error}
+              canAdopt={!canEdit && currentUserType === "PF" && pet.status === "available"}
+              isAdopting={isAdopting}
+              hasActiveAdoption={hasActiveAdoption}
+              onAdoptClick={async () => {
+                setIsAdopting(true)
+                try {
+                  const result = await expressAdoptionInterest(pet.id)
+                  if (!result.success) {
+                    toast.error(result.error ?? "Erro ao registrar interesse.")
+                    return
+                  }
+
+                  if (result.alreadyExists) {
+                    toast.info("Você já demonstrou interesse neste pet!", {
+                      description: "Seu processo de adoção está em andamento.",
+                    })
+                  } else {
+                    toast.success("Interesse registrado!", {
+                      description: "Agora vamos te conectar ao responsável pelo WhatsApp.",
+                    })
+                    setHasActiveAdoption(true)
+                  }
+
+                  const link = getWhatsAppLink(result.whatsappPhone, `Olá! Tenho interesse no pet ${pet.name}. Gostaria de saber mais detalhes sobre a adoção.`)
+                  
+                  if (link) {
+                    window.open(link, "_blank", "noopener,noreferrer")
+                  } else {
+                    toast.warning("Responsável sem telefone válido cadastrado. Consulte a organização.")
+                  }
+                } catch {
+                  toast.error("Erro inesperado. Tente novamente.")
+                } finally {
+                  setIsAdopting(false)
+                }
+              }}
+            />
+
+            {/* ── Main Details Card ─────────────────────────────────── */}
             <Card className="rounded-2xl border-border shadow-sm bg-white overflow-hidden">
-              <CardContent className="p-6 md:p-8">
-                <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-                  {/* Left: name + quick info */}
-                  <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <h1 className="text-2xl font-bold font-sans text-foreground leading-tight">
-                        {pet.name}
-                      </h1>
-                      <span
-                        className={cn(
-                          "inline-flex items-center rounded-lg border px-2.5 py-1 text-xs font-semibold font-sans",
-                          pet.status === "available"
-                            ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-                            : pet.status === "adopted"
-                              ? "bg-sky-50 text-sky-700 border-sky-200"
-                              : "bg-muted text-muted-foreground border-border"
-                        )}
-                      >
-                        {displayStatus(pet.status)}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground font-sans">
+              <CardContent className="p-6 md:p-8 flex flex-col gap-6 md:gap-8">
+                
+                {/* 1. Header do Pet (Linha Principal + Secundária) */}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-start justify-between gap-4 w-full">
+                    <h1 className="text-2xl md:text-3xl font-bold font-sans text-foreground leading-tight">
+                      {pet.name}
+                    </h1>
+                    <span
+                      className={cn(
+                        "inline-flex shrink-0 items-center justify-center rounded-lg border px-3 py-1.5 text-xs font-bold font-sans",
+                        pet.status === "available"
+                          ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+                          : pet.status === "adopted"
+                            ? "bg-sky-50 text-sky-700 border-sky-200"
+                            : "bg-muted text-muted-foreground border-border"
+                      )}
+                    >
+                      {displayStatus(pet.status)}
+                    </span>
+                  </div>
+                  
+                  <div className="flex flex-col gap-1.5 mt-1">
+                    <p className="text-base text-muted-foreground font-sans font-medium">
                       {pet.breed} · {displayGender(pet.sex)}
                     </p>
                     {(pet.city || pet.address_state) && (
                       <p className="flex items-center gap-1.5 text-sm text-muted-foreground font-sans">
-                        <MapPin className="h-3.5 w-3.5" />
+                        <MapPin className="h-4 w-4 shrink-0" />
                         {[pet.neighborhood, pet.city, pet.address_state]
                           .filter(Boolean)
                           .join(", ")}
                       </p>
                     )}
                   </div>
-
-                  {/* Right: CTA (Adotar only if not owner) */}
-                  {!canEdit && (
-                    <div className="flex flex-col gap-2 shrink-0 md:items-end w-full md:w-auto mt-2 md:mt-0">
-                      <Button
-                        className="h-11 md:h-10 gap-2 rounded-lg font-sans font-bold bg-primary hover:bg-[#2d0254] text-primary-foreground w-full md:w-auto px-6 text-base md:text-sm"
-                      >
-                        <Heart className="h-4 w-4" />
-                        Adotar pet
-                      </Button>
-                    </div>
-                  )}
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* ── Info sections ─────────────────────────────────── */}
-            <Card className="rounded-2xl border-border shadow-sm bg-white overflow-hidden">
-              <CardContent className="p-6 md:p-8 flex flex-col gap-6">
+                <Separator />
 
-                {/* Características físicas */}
+                {/* 3. Características físicas */}
                 <div className="flex flex-col gap-4">
                   <h2 className="text-base font-bold font-sans text-foreground">
                     Características

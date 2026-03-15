@@ -1,24 +1,19 @@
 import { AuthPageHeader } from "@/components/layout/AuthPageHeader"
 import { HomeIndicators } from "@/components/pj/home/HomeIndicators"
 import { CapacityCard } from "@/components/pj/CapacityCard"
-import { HomeAdoptions, type AdoptionProcess } from "@/components/pj/home/HomeAdoptions"
+import { HomeAdoptions } from "@/components/pj/home/HomeAdoptions"
 import { RecentActivities, type PetActivity } from "@/components/pj/home/RecentActivities"
 import { usePJCapacity } from "@/hooks/usePJCapacity"
+import { fetchActiveAdoptionsForOwner, type AdoptionWithDetails } from "@/lib/actions/adoptions"
+import { useState, useEffect } from "react"
 
-// Mock data for V1 — sections not yet connected to Supabase
+// Mock data for V1 — indicators and activities not yet connected to Supabase
 const mockIndicators = {
   totalPets: 124,
   available: 42,
   inProgress: 8,
   completed: 74,
 }
-
-const mockAdoptions: AdoptionProcess[] = [
-  { id: "1", petName: "Thor", adopterName: "Carlos Silva", startDate: "12/03/2026", status: "Entrevista" },
-  { id: "2", petName: "Bella", adopterName: "Marina Souza", startDate: "10/03/2026", status: "Análise de Documentos" },
-  { id: "3", petName: "Luna", adopterName: "Rafael Costa", startDate: "08/03/2026", status: "Visita Agendada" },
-  { id: "4", petName: "Max", adopterName: "Ana Clara", startDate: "05/03/2026", status: "Pendente" },
-]
 
 const mockActivities: PetActivity[] = [
   { id: "1", petName: "Lily", action: "Cadastrado", date: "Hoje às 09:12" },
@@ -33,6 +28,15 @@ const mockActivities: PetActivity[] = [
  */
 export function PJHomeView() {
   const { data: capacityData, isLoading: capacityLoading, updateCapacity } = usePJCapacity()
+  const [activeAdoptions, setActiveAdoptions] = useState<AdoptionWithDetails[]>([])
+  const [adoptionsLoading, setAdoptionsLoading] = useState(true)
+
+  useEffect(() => {
+    fetchActiveAdoptionsForOwner().then(({ data }) => {
+      setActiveAdoptions(data)
+      setAdoptionsLoading(false)
+    })
+  }, [])
 
   return (
     <div className="flex flex-1 flex-col h-full bg-slate-50/50">
@@ -57,7 +61,7 @@ export function PJHomeView() {
           />
 
           {/* Adoções em Andamento */}
-          <HomeAdoptions data={mockAdoptions} />
+          <HomeAdoptions data={activeAdoptions} isLoading={adoptionsLoading} />
 
           {/* Atividades Recentes (largura total) */}
           <RecentActivities data={mockActivities} context="global" />

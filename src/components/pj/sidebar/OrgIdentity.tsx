@@ -34,14 +34,14 @@ export function OrgIdentity({ orgName, orgType, logoUrl, isCollapsed }: OrgIdent
       </Avatar>
 
       {!isCollapsed && (
-        <div className="flex min-w-0 flex-col">
+        <div className="flex min-w-0 flex-col items-start text-left">
           <span
-            className="truncate text-sm font-bold leading-tight text-foreground"
+            className="truncate w-full text-sm font-bold leading-tight text-foreground"
             title={orgName}
           >
             {orgName}
           </span>
-          <span className="text-xs text-muted-foreground font-medium leading-tight mt-0.5">
+          <span className="truncate w-full text-xs text-muted-foreground font-medium leading-tight mt-0.5" title={orgType}>
             {orgType}
           </span>
         </div>

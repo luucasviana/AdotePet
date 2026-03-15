@@ -13,6 +13,9 @@ import { PJConfiguracoesPage } from "@/pages/pj/PJConfiguracoesPage"
 import { UserProfilePage } from "@/pages/profile/UserProfilePage"
 import { NewPetPage } from "@/pages/pets/NewPetPage"
 import { PetDetailPage } from "@/pages/pets/PetDetailPage"
+import { QueroAdotarPage } from "@/pages/pf/QueroAdotarPage"
+import { PartnersCategoryPage } from "@/pages/partners/PartnersCategoryPage"
+import { PartnerProfilePage } from "@/pages/partners/PartnerProfilePage"
 
 /**
  * Roteamento da aplicação AdotePet.
@@ -55,6 +58,13 @@ export function AppRouter() {
           <Route path="adocoes"             element={<PJAdocoesPage />} />
           <Route path="configuracoes"       element={<PJConfiguracoesPage />} />
           <Route path="perfil"              element={<UserProfilePage />} />
+
+          {/* Rotas PF */}
+          <Route path="quero-adotar"               element={<QueroAdotarPage />} />
+          {/* Perfil deve vir antes de :categoria para não capturar 'perfil' como categoria */}
+          <Route path="parceiros/perfil/:slug"     element={<PartnerProfilePage />} />
+          <Route path="parceiros/:categoria"       element={<PartnersCategoryPage />} />
+          <Route path="parceiros"                  element={<PartnersCategoryPage />} />
         </Route>
 
         {/* Redirect de rotas legadas */}

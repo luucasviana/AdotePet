@@ -40,7 +40,24 @@ export function AppSidebar() {
     navigate("/login")
   }
 
-  const navSection = NAV_CONFIG[userType]
+  // ── Aplicar regras de visibilidade na navegação ───────────────────────
+  const baseNavSection = NAV_CONFIG[userType]
+  
+  // Clonar para não mutar a constante global
+  const mainNav = [...baseNavSection.main]
+
+  // Configurações deve aparecer apenas para a conta-base PJ proprietária dos tipos:
+  // ONG, abrigo, órgão municipal.
+  if (userType === "PJ") {
+    const orgTypeAuth = profile?.org_type || user?.user_metadata?.tipo_conta
+    const allowedOrgTypes = ["ONG", "Abrigo", "Órgão Municipal", "ong", "abrigo", "orgao_municipal"]
+    
+    if (!allowedOrgTypes.includes(orgTypeAuth)) {
+      // Remove "Configurações"
+      const configIndex = mainNav.findIndex((i) => i.to === "/home/configuracoes")
+      if (configIndex > -1) mainNav.splice(configIndex, 1)
+    }
+  }
 
   // ── Derivar dados de identidade ─────────────────────────────────────────
   // Para PJ: priorizar dados da tabela profiles (logo e nome atualizados)
@@ -58,14 +75,16 @@ export function AppSidebar() {
     (user?.user_metadata?.tipo_conta === "abrigo" ? "Abrigo" : "ONG")
 
   const displayName: string =
+    profile?.social_name ||
+    profile?.full_name ||
     user?.user_metadata?.full_name ||
     user?.user_metadata?.nome ||
     user?.email?.split("@")[0] ||
     "Usuário"
 
-  // logo_url vem da tabela profiles (atualizado ao salvar configurações)
+  // avatar_url e logo_url
   const logoUrl: string | undefined = profile?.logo_url || undefined
-  const avatarUrl: string | undefined = user?.user_metadata?.avatar_url
+  const avatarUrl: string | undefined = profile?.avatar_url || user?.user_metadata?.avatar_url
 
   // ── Subtítulo Admin ───────────────────────────────────────────────────
   const adminSubtitle = "Administrador"
@@ -143,7 +162,7 @@ export function AppSidebar() {
             )}
 
             <nav aria-label="Menu principal" className={cn("w-full flex flex-col", isCollapsed ? "items-center" : "")}>
-              {navSection.main.map((item) => (
+              {mainNav.map((item) => (
                 <SidebarNavItem
                   key={item.to}
                   to={item.to}
