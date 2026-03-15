@@ -7,9 +7,8 @@ export function SiteHeader() {
     return (
         <header className="sticky top-0 z-40 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <Container className="flex h-16 items-center justify-between">
-                <a href="/" className="flex items-center gap-2">
-                    <img src="/logo.png" alt="AdotePet" width={48} height={48} className="h-12 w-12 object-contain" />
-                    <span className="text-xl font-bold text-primary">AdotePet</span>
+                <a href="/" className="flex items-center">
+                    <img src="/logo%20principal.png" alt="AdotePet" className="h-10 w-auto object-contain" />
                 </a>
 
                 <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">

@@ -1,5 +1,5 @@
 import type { Pet } from "@/data/pets"
-import { PetCard } from "./PetCard"
+import { PetCard } from "@/components/shared/PetCard"
 import { formatDistance, calculateDistance } from "@/lib/geo"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -54,7 +54,21 @@ export function PetGrid({ pets, loading, userLocation }: PetGridProps) {
                     distanceStr = formatDistance(dist)
                 }
 
-                return <PetCard key={pet.id} pet={pet} distance={distanceStr} />
+                const petData = {
+                    id: pet.id,
+                    name: pet.name,
+                    species: pet.species,
+                    sex: pet.gender,
+                    size: pet.size,
+                    breed: pet.breed,
+                    age: pet.age,
+                    status: undefined,
+                    city: pet.city,
+                    state: pet.state,
+                    photoUrl: pet.image,
+                }
+
+                return <PetCard key={pet.id} pet={petData} context="public" distance={distanceStr} />
             })}
         </div>
     )

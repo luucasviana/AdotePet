@@ -7,9 +7,8 @@ export function SiteFooter() {
             <Container>
                 <div className="grid grid-cols-1 gap-8 md:grid-cols-4 text-center md:text-left">
                     <div className="space-y-4 flex flex-col items-center md:items-start">
-                        <a href="/" className="flex items-center gap-2">
-                            <img src="/logo.png" alt="AdotePet" width={48} height={48} className="h-12 w-12 object-contain" />
-                            <span className="text-xl font-bold text-primary">AdotePet</span>
+                        <a href="/" className="flex items-center">
+                            <img src="/logo%20principal.png" alt="AdotePet" className="h-10 w-auto object-contain" />
                         </a>
                         <p className="text-sm text-muted-foreground">
                             Conectando corações e patas desde 2024. Nossa missão é encontrar um lar amoroso para cada animal.

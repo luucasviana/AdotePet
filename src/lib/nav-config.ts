@@ -36,10 +36,9 @@ export const NAV_CONFIG: Record<UserType, NavSection> = {
       { to: "/home",              icon: Home,    label: "Início",     end: true },
       { to: "/home/pets",         icon: PawPrint, label: "Meus pets" },
       { to: "/home/adocoes",      icon: Heart,   label: "Adoções" },
-    ],
-    footer: [
       { to: "/home/configuracoes", icon: Settings, label: "Configurações" },
     ],
+    footer: [],
   },
 
   PF: {
@@ -48,10 +47,9 @@ export const NAV_CONFIG: Record<UserType, NavSection> = {
       { to: "/home/buscar",       icon: Search,   label: "Buscar pets" },
       { to: "/home/favoritos",    icon: Bookmark, label: "Favoritos" },
       { to: "/home/adocoes",      icon: Heart,    label: "Minhas adoções" },
-    ],
-    footer: [
       { to: "/home/configuracoes", icon: Settings, label: "Configurações" },
     ],
+    footer: [],
   },
 
   ADMIN: {
@@ -60,9 +58,8 @@ export const NAV_CONFIG: Record<UserType, NavSection> = {
       { to: "/home/usuarios",     icon: Users,     label: "Usuários" },
       { to: "/home/organizacoes", icon: Building2, label: "Organizações" },
       { to: "/home/relatorios",   icon: BarChart3, label: "Relatórios" },
-    ],
-    footer: [
       { to: "/home/configuracoes", icon: Settings, label: "Configurações" },
     ],
+    footer: [],
   },
 }

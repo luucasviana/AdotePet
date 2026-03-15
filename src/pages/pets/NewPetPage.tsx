@@ -238,7 +238,7 @@ function Step1BasicInfo() {
             name="sex"
             control={control}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <SelectTrigger className="h-10 rounded-lg font-sans">
                   <SelectValue placeholder="Selecione macho ou fêmea" />
                 </SelectTrigger>
@@ -530,7 +530,7 @@ function Step3Characteristics({
             name="age_range"
             control={control}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <SelectTrigger className="h-10 rounded-lg font-sans">
                   <SelectValue placeholder="Qual a idade estimada?" />
                 </SelectTrigger>
@@ -554,7 +554,7 @@ function Step3Characteristics({
             name="neutered_status"
             control={control}
             render={({ field }) => (
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select onValueChange={field.onChange} defaultValue={field.value} value={field.value}>
                 <SelectTrigger className="h-10 rounded-lg font-sans">
                   <SelectValue placeholder="O pet é castrado?" />
                 </SelectTrigger>
@@ -599,7 +599,7 @@ function Step4Description() {
 
 // ─── Step 5 — Sucesso ────────────────────────────────────────────────────────
 
-function Step5Success({ onNewPet, isEditMode }: { onNewPet: () => void; isEditMode: boolean }) {
+function Step5Success({ onNewPet, isEditMode, petName }: { onNewPet: () => void; isEditMode: boolean; petName?: string }) {
   const navigate = useNavigate()
   return (
     <div className="flex flex-col items-center justify-center py-16 px-4 text-center animate-in zoom-in-95 fade-in duration-500">
@@ -626,7 +626,7 @@ function Step5Success({ onNewPet, isEditMode }: { onNewPet: () => void; isEditMo
           variant="outline"
           className="h-10 w-full rounded-lg font-sans font-medium"
         >
-          {isEditMode ? "Ver pet" : "Cadastrar novo pet"}
+          {isEditMode ? `Ver ${petName || "pet"}` : "Cadastrar novo pet"}
         </Button>
       </div>
     </div>
@@ -637,6 +637,7 @@ function Step5Success({ onNewPet, isEditMode }: { onNewPet: () => void; isEditMo
 
 export function NewPetPage() {
   const { petId } = useParams<{ petId: string }>()
+  const navigate = useNavigate()
   const isEditMode = !!petId
 
   const [colors, setColors] = useState<{ id: string; hex: string; label: string }[]>([])
@@ -796,7 +797,6 @@ export function NewPetPage() {
 
   const handleResetOrNavigate = () => {
     if (isEditMode && petId) {
-      const navigate = useNavigate()
       navigate(`/home/pets/${petId}`)
     } else {
       form.reset()
@@ -882,7 +882,7 @@ export function NewPetPage() {
                 </Card>
               )}
 
-              {currentStep === 4 && <Step5Success onNewPet={handleResetOrNavigate} isEditMode={isEditMode} />}
+              {currentStep === 4 && <Step5Success onNewPet={handleResetOrNavigate} isEditMode={isEditMode} petName={form.watch("name")} />}
             </form>
           </FormProvider>
 

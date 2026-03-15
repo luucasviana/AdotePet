@@ -11,13 +11,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Badge } from "@/components/ui/badge"
-import { Card, CardContent, CardFooter } from "@/components/ui/card"
+
 import { Skeleton } from "@/components/ui/skeleton"
 import { Separator } from "@/components/ui/separator"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import {
-  MapPin,
   Search,
   PlusCircle,
   AlertCircle,
@@ -25,8 +23,7 @@ import {
   X,
   SlidersHorizontal,
 } from "lucide-react"
-import { displaySpecies, displaySize, displayGender } from "@/lib/filters"
-import { cn } from "@/lib/utils"
+import { PetCard } from "@/components/shared/PetCard"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -57,106 +54,7 @@ interface Filters {
 
 const PAGE_SIZE = 12
 
-// ─── Display helpers ──────────────────────────────────────────────────────────
-
-function displayAgeRange(value: string): string {
-  if (value === "up_to_1_year") return "Até 1 ano"
-  if (value === "from_1_to_3_years") return "1–3 anos"
-  if (value === "from_3_to_6_years") return "3–6 anos"
-  if (value === "over_6_years") return "Mais de 6 anos"
-  return value
-}
-
-function displayStatus(value: string): string {
-  if (value === "available") return "Disponível"
-  if (value === "adopted") return "Adotado"
-  if (value === "removed") return "Removido"
-  return value
-}
-
-
-// ─── Pet Card (auth area) ─────────────────────────────────────────────────────
-
-function PetListCard({ pet, onNavigate }: { pet: SupabasePet; onNavigate: () => void }) {
-  const placeholderImg = `https://placehold.co/400x300/f1f5f9/94a3b8?text=${encodeURIComponent(pet.name)}`
-  const imgSrc = pet.primary_photo || placeholderImg
-
-  return (
-    <Card className="group overflow-hidden rounded-2xl border border-border shadow-sm transition-shadow hover:shadow-md bg-white">
-      {/* Photo */}
-      <div className="relative h-40 w-full overflow-hidden bg-muted">
-        <img
-          src={imgSrc}
-          alt={`Foto de ${pet.name}`}
-          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
-          loading="lazy"
-          onError={(e) => {
-            ;(e.currentTarget as HTMLImageElement).src = placeholderImg
-          }}
-        />
-        {/* Status badge */}
-        <div className="absolute left-2 top-2">
-          <span
-            className={cn(
-              "inline-flex items-center rounded-lg border px-2.5 py-0.5 text-xs font-medium font-sans backdrop-blur-sm transition-colors",
-              pet.status === "available"
-                ? "bg-white/90 text-emerald-700 border-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600"
-                : pet.status === "adopted"
-                  ? "bg-white/90 text-sky-700 border-sky-200 hover:bg-sky-600 hover:text-white hover:border-sky-600"
-                  : "bg-white/90 text-muted-foreground border-border hover:bg-muted hover:text-foreground"
-            )}
-          >
-            {displayStatus(pet.status)}
-          </span>
-        </div>
-      </div>
-
-      <CardContent className="p-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <h3 className="truncate text-base font-bold font-sans text-foreground leading-tight">
-              {pet.name}
-            </h3>
-            <p className="truncate text-xs text-muted-foreground font-sans mt-0.5">
-              {pet.breed} · {displaySize(pet.size)}
-            </p>
-          </div>
-          <Badge variant="outline" className="shrink-0 text-xs font-sans rounded-lg h-6">
-            {displayGender(pet.sex)}
-          </Badge>
-        </div>
-
-        <div className="mt-3 flex flex-col gap-1.5">
-          <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-sans">
-            <PawPrint className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">
-              {displaySpecies(pet.species)} • {displayAgeRange(pet.age_range)}
-            </span>
-          </div>
-          {(pet.city || pet.address_state) && (
-            <div className="flex items-center gap-1.5 text-xs text-muted-foreground font-sans">
-              <MapPin className="h-3.5 w-3.5 shrink-0" />
-              <span className="truncate">
-                {[pet.city, pet.address_state].filter(Boolean).join(", ")}
-              </span>
-            </div>
-          )}
-        </div>
-      </CardContent>
-
-      <CardFooter className="p-4 pt-0">
-        <button
-          onClick={onNavigate}
-          className="flex w-full items-center justify-center rounded-lg bg-primary/10 py-2 text-xs font-semibold font-sans text-primary transition-colors hover:bg-primary/20"
-          aria-label={`Ver detalhes de ${pet.name}`}
-        >
-          Ver detalhes
-        </button>
-      </CardFooter>
-    </Card>
-  )
-}
-
+// ─── Component ─────────────────────────────────────────────────────────
 // ─── Skeleton cards ───────────────────────────────────────────────────────────
 
 function PetGridSkeleton() {
@@ -443,7 +341,7 @@ function FiltersBar({
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export function PJPetsPage() {
+export function PetsPage() {
   const navigate = useNavigate()
 
   const [allPets, setAllPets] = useState<SupabasePet[]>([])
@@ -524,7 +422,7 @@ export function PJPetsPage() {
 
       setAllPets(mapped)
     } catch (err: any) {
-      console.error("PJPetsPage fetchPets error:", err)
+      console.error("PetsPage fetchPets error:", err)
       setError(err.message || "Erro inesperado ao carregar os pets.")
     } finally {
       setLoading(false)
@@ -670,13 +568,29 @@ export function PJPetsPage() {
           ) : (
             <>
               <div className="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-4">
-                {pagePets.map((pet) => (
-                  <PetListCard
-                    key={pet.id}
-                    pet={pet}
-                    onNavigate={() => navigate(`/home/pets/${pet.id}`)}
-                  />
-                ))}
+                {pagePets.map((pet) => {
+                  const petData = {
+                    id: pet.id,
+                    name: pet.name,
+                    species: pet.species,
+                    sex: pet.sex,
+                    size: pet.size,
+                    breed: pet.breed,
+                    age: pet.age_range,
+                    status: pet.status,
+                    city: pet.city,
+                    state: pet.address_state,
+                    photoUrl: pet.primary_photo,
+                  }
+                  return (
+                    <PetCard
+                      key={pet.id}
+                      pet={petData}
+                      context="authenticated"
+                      onNavigate={() => navigate(`/home/pets/${pet.id}`)}
+                    />
+                  )
+                })}
               </div>
 
               {totalPages > 1 && (

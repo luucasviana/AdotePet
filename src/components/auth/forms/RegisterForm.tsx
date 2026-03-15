@@ -424,9 +424,8 @@ export function RegisterForm() {
     <div className="w-full rounded-2xl border bg-white shadow-sm flex flex-col">
       {/* Header */}
       <div className="flex flex-col items-center gap-4 px-8 pt-8 pb-6 border-b border-border">
-        <div className="flex items-center gap-2">
-          <img src="/logo.png" alt="AdotePet logo" width={48} height={48} className="rounded-lg object-contain" />
-          <span className="text-xl font-bold text-[#3B0270]">AdotePet</span>
+        <div className="flex justify-center w-full mb-2">
+          <img src="/logo%20principal.png" alt="AdotePet" className="h-12 w-auto object-contain" />
         </div>
         <p className="text-sm text-muted-foreground">Crie sua conta e comece a ajudar 🐾</p>
 

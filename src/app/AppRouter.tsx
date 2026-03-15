@@ -7,9 +7,10 @@ import { GuestRoute } from "@/components/auth/GuestRoute"
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute"
 import { AuthLayout } from "@/components/layout/AuthLayout"
 import { HomePage } from "@/pages/HomePage"
-import { PJPetsPage } from "@/pages/pj/PJPetsPage"
+import { PetsPage } from "@/pages/pets/PetsPage"
 import { PJAdocoesPage } from "@/pages/pj/PJAdocoesPage"
 import { PJConfiguracoesPage } from "@/pages/pj/PJConfiguracoesPage"
+import { UserProfilePage } from "@/pages/profile/UserProfilePage"
 import { NewPetPage } from "@/pages/pets/NewPetPage"
 import { PetDetailPage } from "@/pages/pets/PetDetailPage"
 
@@ -47,12 +48,13 @@ export function AppRouter() {
           <Route index element={<HomePage />} />
 
           {/* Funcionalidades PJ */}
-          <Route path="pets"                element={<PJPetsPage />} />
+          <Route path="pets"                element={<PetsPage />} />
           <Route path="pets/novo"           element={<NewPetPage />} />
           <Route path="pets/:petId"         element={<PetDetailPage />} />
           <Route path="pets/:petId/editar"  element={<NewPetPage />} />
           <Route path="adocoes"             element={<PJAdocoesPage />} />
           <Route path="configuracoes"       element={<PJConfiguracoesPage />} />
+          <Route path="perfil"              element={<UserProfilePage />} />
         </Route>
 
         {/* Redirect de rotas legadas */}
@@ -62,3 +64,4 @@ export function AppRouter() {
     </BrowserRouter>
   )
 }
+

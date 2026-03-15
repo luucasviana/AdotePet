@@ -358,7 +358,7 @@ export function PetDetailPage() {
   const handleBack = () => navigate(-1)
 
   const headerSubtitle = pet
-    ? `${displaySpecies(pet.species)} · ${displayGender(pet.sex)} · ${pet.breed}`
+    ? `${pet.breed} · ${displayGender(pet.sex)}`
     : "Carregando..."
 
   const handleUpdateStatus = async () => {
@@ -387,8 +387,25 @@ export function PetDetailPage() {
     if (!pet) return
     setIsDeleting(true)
     try {
-      // Hard delete as requested if 'excluir' is meant. Or we could soft delete, but prompt says 'excluir da base de dados'. We use the delete endpoint.
-      const { error: delError } = await supabase.from("pets").delete().eq("id", pet.id)
+      const petId = pet.id;
+
+      // 1. Extrair os filenames das URLs das fotos para excluí-las do Storage
+      if (pet.photos && pet.photos.length > 0) {
+        const filePaths = pet.photos.map(photo => {
+          // A URL pública padrão do Supabase termina com o nome do arquivo, ex: /storage/v1/object/public/pets/filename.ext
+          const urlParts = photo.file_url.split('/')
+          return urlParts[urlParts.length - 1]
+        }).filter(Boolean)
+
+        if (filePaths.length > 0) {
+          await supabase.storage.from("pets").remove(filePaths)
+        }
+      }
+
+      // 2. Apagar o registro do pet em si. 
+      // O banco de dados configurado com ON DELETE CASCADE irá apagar automaticamente 
+      // os registros relacionados em pet_photos, pet_color_assignments, pet_trait_assignments e pet_events.
+      const { error: delError } = await supabase.from("pets").delete().eq("id", petId)
       if (delError) throw delError
       
       toast.success("Pet excluído com sucesso.")
@@ -436,7 +453,7 @@ export function PetDetailPage() {
                   className="h-10 gap-2 rounded-lg font-sans border-primary text-primary hover:bg-primary/5 bg-white"
                 >
                   <Pencil className="h-4 w-4" />
-                  <span className="hidden sm:inline">Editar pet</span>
+                  <span className="hidden sm:inline">Editar {pet.name}</span>
                 </Button>
               </>
             )}
@@ -481,7 +498,7 @@ export function PetDetailPage() {
                       </span>
                     </div>
                     <p className="text-sm text-muted-foreground font-sans">
-                      {pet.breed} · {displaySpecies(pet.species)} · {displayGender(pet.sex)}
+                      {pet.breed} · {displayGender(pet.sex)}
                     </p>
                     {(pet.city || pet.address_state) && (
                       <p className="flex items-center gap-1.5 text-sm text-muted-foreground font-sans">

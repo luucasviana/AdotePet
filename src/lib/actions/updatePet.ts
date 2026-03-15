@@ -46,26 +46,33 @@ export async function updatePet(payload: UpdatePetPayload) {
   }
 
   // 2. Atualizar tabela `pets`
-  const { error: updateError } = await supabase
+  const { data: updateData, error: updateError } = await supabase
     .from("pets")
     .update(petData)
     .eq("id", petId)
-    .eq("status", "available") // Assuming edits are for available pets typically, but allow it to succeed basically. We'll omit this constraint if they edit adopted ones. 
-    // Actually, let's just update by ID.
+    .select()
     
-  if (updateError) {
-    console.error("updateError", updateError)
-    throw new Error("Erro ao salvar dados principais do pet.")
+  if (updateError || !updateData || updateData.length === 0) {
+    if (updateError) console.error("updateError", updateError)
+    throw new Error("Erro ao salvar dados principais do pet ou pet não encontrado.")
   }
 
-  // 3. Atualizar Fotos (Deleta antigas / Insere Novas)
+  // 3. Atualizar Fotos (Deleta antigas / Upsert Novas)
   // Como as fotos do bucket vão sobrar, numa app real precisaríamos de limpeza de storage. 
-  // Por simplicidade: delete todas do banco e re-insere (ou mantemos a URL antiga se passada adiante).
+  // Limpamos do banco explicitamente as antigas. Usamos um Upsert (ON CONFLICT) na inserção para evitar 409
+  // (Caso o delete anterior não tenha committado a tempo ou o banco trave por causa da unique uq_pet_photos_sort_order)
+  
   const { error: deletePhotosError } = await supabase.from("pet_photos").delete().eq("pet_id", petId)
-  if (deletePhotosError) throw new Error("Erro ao atualizar fotos do pet.")
+  if (deletePhotosError) throw new Error("Erro ao limpar fotos antigas do pet.")
 
-  const { error: insertPhotosError } = await supabase.from("pet_photos").insert(
-    photos.map(p => ({ pet_id: petId, ...p }))
+  const { error: insertPhotosError } = await supabase.from("pet_photos").upsert(
+    photos.map(p => ({ 
+        pet_id: petId, 
+        file_url: p.file_url,
+        sort_order: p.sort_order,
+        is_primary: p.is_primary 
+    })),
+    { onConflict: "pet_id,sort_order" }
   )
   if (insertPhotosError) throw new Error("Erro ao salvar as novas fotos do pet.")
 

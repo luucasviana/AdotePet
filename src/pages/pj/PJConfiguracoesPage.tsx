@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { AuthPageHeader } from "@/components/layout/AuthPageHeader"
-import { OrganizationProfileForm } from "@/components/pj/settings/OrganizationProfileForm"
 import { CapacityCard } from "@/components/pj/CapacityCard"
 import { TeamMembersSection, type TeamMember } from "@/components/pj/settings/TeamMembersSection"
 import { useProfile } from "@/hooks/useProfile"
@@ -72,27 +71,6 @@ export function PJConfiguracoesPage() {
     )
   }
 
-  // Parse to Form Model
-  const profileFormValues = orgData
-    ? {
-        cnpj: (orgData.cnpj as string),
-        nomeOrganizacao: (orgData.company_name as string),
-        nomeFantasia: (orgData.fantasy_name as string) || "",
-        tipoOrganizacao: (orgData.org_type as string),
-        email: (orgData.email as string),
-        telefone: (orgData.phone as string) || "",
-        logoUrl: (orgData.logo_url as string) || "",
-        // Address
-        cep: (orgData.cep as string) || "",
-        addressState: (orgData.address_state as string) || "",
-        city: (orgData.city as string) || "",
-        neighborhood: (orgData.neighborhood as string) || "",
-        street: (orgData.street as string) || "",
-        addressNumber: (orgData.address_number as string) || "",
-        complement: (orgData.complement as string) || "",
-      }
-    : undefined
-
   const handleUpdateCapacity = async (newCapacity: number) => {
     if (!orgData) return
     const { error } = await supabase
@@ -102,44 +80,6 @@ export function PJConfiguracoesPage() {
 
     if (!error) {
       setOrgData({ ...orgData, total_capacity: newCapacity })
-    } else {
-      throw error
-    }
-  }
-
-  const handleSaveProfile = async (data: Record<string, string>) => {
-    if (!orgData) return
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        fantasy_name: data.nomeFantasia,
-        phone: data.telefone,
-        logo_url: data.logoUrl || null,
-        // Address fields
-        cep: data.cep?.replace(/\D/g, "") || null,
-        address_state: data.addressState || null,
-        city: data.city || null,
-        neighborhood: data.neighborhood || null,
-        street: data.street || null,
-        address_number: data.addressNumber || null,
-        complement: data.complement || null,
-      })
-      .eq("id", orgData.id as string)
-
-    if (!error) {
-      setOrgData({
-        ...orgData,
-        fantasy_name: data.nomeFantasia,
-        phone: data.telefone,
-        logo_url: data.logoUrl || null,
-        cep: data.cep?.replace(/\D/g, "") || null,
-        address_state: data.addressState || null,
-        city: data.city || null,
-        neighborhood: data.neighborhood || null,
-        street: data.street || null,
-        address_number: data.addressNumber || null,
-        complement: data.complement || null,
-      })
     } else {
       throw error
     }
@@ -155,18 +95,12 @@ export function PJConfiguracoesPage() {
     <div className="flex flex-1 flex-col h-full bg-slate-50/50">
       <AuthPageHeader
         title="Configurações"
-        subtitle="Gerencie as informações e configurações da sua organização."
+        subtitle="Gerencie as informações operacionais da sua organização."
       />
 
       <div className="flex flex-1 flex-col p-6 md:p-8 overflow-y-auto">
-        <Tabs defaultValue="perfil" className="flex flex-col flex-1 max-w-[1000px] w-full mx-auto">
+        <Tabs defaultValue="capacidade" className="flex flex-col flex-1 max-w-[1000px] w-full mx-auto">
           <TabsList className="w-fit rounded-lg h-10 mb-6 bg-muted">
-            <TabsTrigger
-              value="perfil"
-              className="rounded-lg text-sm font-semibold data-[state=active]:bg-[#3B0270] data-[state=active]:text-white"
-            >
-              Perfil da organização
-            </TabsTrigger>
             <TabsTrigger
               value="capacidade"
               className="rounded-lg text-sm font-semibold data-[state=active]:bg-[#3B0270] data-[state=active]:text-white"
@@ -181,23 +115,7 @@ export function PJConfiguracoesPage() {
             </TabsTrigger>
           </TabsList>
 
-          {/* Aba 1 — Perfil da Organização */}
-          <TabsContent
-            value="perfil"
-            className="flex flex-col gap-6 focus-visible:outline-none focus-visible:ring-0"
-          >
-            {orgData ? (
-              <OrganizationProfileForm
-                userId={profile!.id}
-                initialData={profileFormValues}
-                onSave={handleSaveProfile}
-              />
-            ) : (
-              emptyState
-            )}
-          </TabsContent>
-
-          {/* Aba 2 — Capacidade */}
+          {/* Aba 1 — Capacidade */}
           <TabsContent
             value="capacidade"
             className="flex flex-col gap-6 focus-visible:outline-none focus-visible:ring-0"
@@ -213,7 +131,7 @@ export function PJConfiguracoesPage() {
             )}
           </TabsContent>
 
-          {/* Aba 3 — Equipe */}
+          {/* Aba 2 — Equipe */}
           <TabsContent
             value="equipe"
             className="flex flex-col gap-6 focus-visible:outline-none focus-visible:ring-0"

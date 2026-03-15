@@ -1,11 +1,12 @@
 import { useState } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { toast } from "sonner"
-import { LogOut, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react"
+import { LogOut, Plus, PanelLeftClose, PanelLeftOpen, MoreVertical, Settings } from "lucide-react"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Separator } from "@/components/ui/separator"
 import { Button } from "@/components/ui/button"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { useAuth } from "@/context/AuthContext"
 import { useProfile } from "@/hooks/useProfile"
 import { NAV_CONFIG } from "@/lib/nav-config"
@@ -27,9 +28,11 @@ export function AppSidebar() {
   const { user, signOut } = useAuth()
   const { userType, profile } = useProfile()
   const navigate = useNavigate()
-  
+
   // Estado para controlar se a sidebar está recolhida ou expandida
   const [isCollapsed, setIsCollapsed] = useState(false)
+  // Estado para controlar a abertura/fechamento do menu da conta
+  const [isPopoverOpen, setIsPopoverOpen] = useState(false)
 
   const handleSignOut = async () => {
     await signOut()
@@ -94,15 +97,13 @@ export function AppSidebar() {
           )}
         </Button>
 
-        {/* ── 1. Topo: identidade do usuário ── */}
-        <div className="shrink-0 border-b border-border min-h-[73px] flex items-center">
-          {userType === "PJ" ? (
-            <OrgIdentity orgName={orgName} orgType={orgType} logoUrl={logoUrl} isCollapsed={isCollapsed} />
-          ) : userType === "ADMIN" ? (
-            <UserIdentity displayName={displayName} avatarUrl={avatarUrl} subtitle={adminSubtitle} isCollapsed={isCollapsed} />
-          ) : (
-            <UserIdentity displayName={displayName} avatarUrl={avatarUrl} isCollapsed={isCollapsed} />
-          )}
+        {/* ── 1. Topo: Logo AdotePet ── */}
+        <div className={cn("shrink-0 border-b border-border min-h-[73px] flex items-center justify-center", isCollapsed ? "px-0" : "px-5")}>
+          <img 
+            src={isCollapsed ? "/logo%20recolhida.png" : "/logo%20principal.png"} 
+            alt="AdotePet"
+            className={cn("object-contain", isCollapsed ? "w-full max-w-[40px] h-auto" : "h-9 w-auto")} 
+          />
         </div>
 
         {/* ── 2. Nav principal ── */}
@@ -156,45 +157,69 @@ export function AppSidebar() {
           </div>
         </ScrollArea>
 
-        {/* ── 3. Rodapé: configurações + sair ── */}
-        <div className="shrink-0 border-t border-border">
-          <div className={cn("flex flex-col gap-1 py-4 w-full", isCollapsed ? "px-2 items-center" : "px-3")}>
-            {navSection.footer.map((item) => (
-              <SidebarNavItem
-                key={item.to}
-                to={item.to}
-                icon={item.icon}
-                label={item.label}
-                isCollapsed={isCollapsed}
-              />
-            ))}
-
-            <Separator className={cn("my-1", isCollapsed ? "w-8" : "w-full")} />
-
-            {isCollapsed ? (
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <button
-                    onClick={handleSignOut}
-                    aria-label="Sair da conta"
-                    className="flex items-center justify-center shrink-0 rounded-lg h-10 w-10 p-0 text-muted-foreground transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40"
-                  >
-                    <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-                  </button>
-                </TooltipTrigger>
-                <TooltipContent side="right" className="font-semibold text-red-600" sideOffset={16}>Sair</TooltipContent>
-              </Tooltip>
-            ) : (
+        {/* ── 3. Rodapé: conta + sair ── */}
+        <div className="shrink-0 border-t border-border mt-auto">
+          <Popover open={isPopoverOpen} onOpenChange={setIsPopoverOpen}>
+            <PopoverTrigger asChild>
               <button
-                onClick={handleSignOut}
-                aria-label="Sair da conta"
-                className="flex items-center gap-3 rounded-lg px-3 h-10 min-h-10 w-full text-sm font-semibold text-muted-foreground transition-colors duration-150 hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500/40 focus-visible:ring-offset-1 overflow-hidden"
+                className={cn(
+                  "w-full relative flex items-center transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:bg-slate-50",
+                  isCollapsed ? "justify-center" : ""
+                )}
+                aria-label="Abrir menu da conta"
               >
-                <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-                <span className="whitespace-nowrap">Sair</span>
+                {userType === "PJ" ? (
+                  <OrgIdentity orgName={orgName} orgType={orgType} logoUrl={logoUrl} isCollapsed={isCollapsed} />
+                ) : userType === "ADMIN" ? (
+                  <UserIdentity displayName={displayName} avatarUrl={avatarUrl} subtitle={adminSubtitle} isCollapsed={isCollapsed} />
+                ) : (
+                  <UserIdentity displayName={displayName} avatarUrl={avatarUrl} isCollapsed={isCollapsed} />
+                )}
+                {!isCollapsed && (
+                  <MoreVertical className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                )}
               </button>
-            )}
-          </div>
+            </PopoverTrigger>
+            <PopoverContent
+              side="right"
+              align={isCollapsed ? "center" : "end"}
+              alignOffset={isCollapsed ? 0 : -8}
+              className="w-56 p-1.5 rounded-xl shadow-md border-border"
+              sideOffset={16}
+            >
+              <div className="flex flex-col gap-1">
+                {isCollapsed && (
+                  <div className="px-3 py-2 border-b border-border mb-1">
+                    <p className="font-semibold font-sans text-sm truncate">{orgName || displayName}</p>
+                    <p className="text-xs font-sans text-muted-foreground truncate">{orgType || (userType === "ADMIN" ? adminSubtitle : "Adotante")}</p>
+                  </div>
+                )}
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm h-10 font-sans font-medium" 
+                  onClick={() => setIsPopoverOpen(false)}
+                  asChild
+                >
+                  <Link to="/home/perfil">
+                    <Settings className="mr-3 h-4 w-4 text-muted-foreground" />
+                    Editar perfil
+                  </Link>
+                </Button>
+                <Separator className="my-1" />
+                <Button 
+                  variant="ghost" 
+                  className="w-full justify-start text-sm h-10 font-sans font-medium text-red-600 hover:text-red-700 hover:bg-red-50" 
+                  onClick={() => {
+                    setIsPopoverOpen(false)
+                    handleSignOut()
+                  }}
+                >
+                  <LogOut className="mr-3 h-4 w-4" />
+                  Sair
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </aside>
     </TooltipProvider>
